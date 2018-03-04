@@ -1,6 +1,9 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
+
+#include "tofunction/tofunction.h"
 
 struct TaskGSA
 {
@@ -10,27 +13,51 @@ struct TaskGSA
 
     unsigned int num_iter;
     double eps;
-};
+} task;
 
-double f(double x)
+struct AnswerGSA
 {
-	return (x / 4)*cos(x);
-}
+    double minX;
+    double minY;
+} answer;
+
+ToFunction toFunc;
+
+double f(double);
+void methodGSA();
 
 int main(int argc, char* argv[])
 {
-	double eps = 0.01;
-	int k = 100;
-	if (argc == 2) {
-		k = atoi(argv[1]);
-	}
-	else if (argc > 2) {
-		k = atoi(argv[1]);
-		eps = atof(argv[2]);
-	}
-	const double r = 3;
-	const double a = 0;
-	const double b = 30;
+    std::ifstream task_stream("../tasks/task_02.task", std::ios::in | std::ios::binary);
+    task_stream >> task.function;
+    task_stream >> task.left_border;
+    task_stream >> task.right_border;
+    task_stream >> task.num_iter;
+    task_stream >> task.eps;
+    task_stream.close();
+
+    toFunc.SetFunction(task.function);
+//=============================================================================
+    methodGSA();
+//=============================================================================
+	std::cout << "\n\n\t(" << answer.minX << ", " << answer.minY << ")\n\n" << std::endl;
+
+	return 0;
+}
+
+double f(double x)
+{
+    toFunc.Calculate(x);
+}
+
+void methodGSA()
+{
+	const double a = task.left_border;
+	const double b = task.right_border;
+    double eps = task.eps;
+	int k = task.num_iter;
+
+    const double r = 3;
 	double m = 1;
 	double maxM = 0;
 	double M;
@@ -105,11 +132,10 @@ int main(int argc, char* argv[])
 			minF = f(x[i + 1]);
 			minX = x[i + 1];
 		}
-
-		std::cout << i + 1 << ":\t" << "(" << x[i + 1] << ", " << f(x[i + 1]) << ")" << std::endl;
 	}
 
-	std::cout << "\n\n\t(" << minX << ", " << minF << ")\n\n" << std::endl;
+    delete[] x;
 
-	return 0;
+    answer.minX = minX;
+    answer.minY = minF;
 }

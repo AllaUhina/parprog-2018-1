@@ -16,7 +16,7 @@ int main (int argc, char* argv[])
     //  Task #1
     {
         TaskGSA task;
-        task.function = "x ^ 2";
+        task.function = "x^2";
         task.left_border = -30;
         task.right_border = 30;
 
@@ -37,7 +37,7 @@ int main (int argc, char* argv[])
     //  Task #2
     {
         TaskGSA task;
-        task.function = "(x / 4) * cos(x)";
+        task.function = "(x/4)*cos(x)";
         task.left_border = 0;
         task.right_border = 30;
 
@@ -58,7 +58,7 @@ int main (int argc, char* argv[])
     //  Task #3
     {
         TaskGSA task;
-        task.function = "(x * sin((x^(0.5))) + cos(x) * x) / 4";
+        task.function = "(x*sin((x^(0.5)))+cos(x)*x)/4";
         task.left_border = 0;
         task.right_border = 70;
 
@@ -79,7 +79,7 @@ int main (int argc, char* argv[])
     //  Task #4
     {
         TaskGSA task;
-        task.function = "(2 ^ x) * sin(x)";
+        task.function = "(2^x)*sin(x)";
         task.left_border = 0;
         task.right_border = 20;
 
