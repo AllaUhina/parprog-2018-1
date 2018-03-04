@@ -2,6 +2,15 @@
 #include <cstdlib>
 #include <iostream>
 
+struct TaskGSA
+{
+    std::string function;
+    double left_border;
+    double right_border;
+
+    unsigned int num_iter;
+    double eps;
+};
 
 double f(double x)
 {
