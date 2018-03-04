@@ -28,7 +28,13 @@ void methodGSA();
 
 int main(int argc, char* argv[])
 {
-    std::ifstream task_stream("../tasks/task_02.task", std::ios::in | std::ios::binary);
+    const char* path_of_test = "../tasks/task_01.task";
+
+    if (argc > 1){
+        path_of_test = argv[1];
+    }
+
+    std::ifstream task_stream(path_of_test, std::ios::in | std::ios::binary);
     task_stream >> task.function;
     task_stream >> task.left_border;
     task_stream >> task.right_border;
