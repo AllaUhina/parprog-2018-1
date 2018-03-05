@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "tofunction/tofunction.h"
+#include "../tofunction/tofunction.h"
 
 struct TaskGSA
 {
