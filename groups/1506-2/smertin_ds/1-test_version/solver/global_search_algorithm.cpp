@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     methodGSA();
 //=============================================================================
 
-    char path_of_answer[] = "../answers/answer_00.answ";
+    char path_of_answer[] = "../results/result_00.rslt";
     int path_task_length = sizeof(path_of_answer) / sizeof(char);
     int path_answ_length = sizeof(path_of_answer) / sizeof(char);
 
