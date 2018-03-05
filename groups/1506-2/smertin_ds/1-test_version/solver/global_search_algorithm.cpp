@@ -28,13 +28,17 @@ void methodGSA();
 
 int main(int argc, char* argv[])
 {
-    const char* path_of_test = "../tasks/task_01.task";
+    const char* path_of_test = "../tasks/task_00.task";
 
     if (argc > 1){
         path_of_test = argv[1];
     }
 
     std::ifstream task_stream(path_of_test, std::ios::in | std::ios::binary);
+    if (!task_stream) {
+        std::cout << "open " << path_of_test << " error" << std::endl;
+        return 1;
+    }
     task_stream >> task.function;
     task_stream >> task.left_border;
     task_stream >> task.right_border;
@@ -46,7 +50,39 @@ int main(int argc, char* argv[])
 //=============================================================================
     methodGSA();
 //=============================================================================
-	std::cout << "\n\n\t(" << answer.minX << ", " << answer.minY << ")\n\n" << std::endl;
+
+    char path_of_answer[] = "../answers/answer_00.answ";
+    int path_task_length = sizeof(path_of_answer) / sizeof(char);
+    int path_answ_length = sizeof(path_of_answer) / sizeof(char);
+
+    int ind_task;
+    for (int ind = 0; ind < path_task_length; ++ind) {
+        if (path_of_test[ind] == '_') {
+            ind_task = ind + 1;
+            break;
+        }
+    }
+
+    int ind_answ;
+    for (int ind = 0; ind < path_answ_length; ++ind) {
+        if (path_of_answer[ind] == '_') {
+            ind_answ = ind + 1;
+            break;
+        }
+    }
+
+    path_of_answer[ind_answ] = path_of_test[ind_task];
+    path_of_answer[ind_answ + 1] = path_of_test[ind_task + 1];
+
+    std::ofstream answer_stream(path_of_answer, std::ios::out | std::ios::binary);
+    if (!answer_stream) {
+        std::cout << "open " << path_of_answer << " error" << std::endl;
+        return 1;
+    }
+    answer_stream << answer.minX << std::endl;
+    answer_stream << answer.minY << std::endl;
+
+    answer_stream.close();
 
 	return 0;
 }

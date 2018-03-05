@@ -13,10 +13,31 @@ struct TaskGSA
 
 int main (int argc, char* argv[])
 {
-    //  Task #1
+    //  Task #0
     {
         TaskGSA task;
         task.function = "x^2";
+        task.left_border = -30;
+        task.right_border = 30;
+
+        task.num_iter = 1000000;
+        task.eps = 0.0001;
+
+        std::ofstream task_stream("../tasks/task_00.task", std::ios::out | std::ios::binary);
+
+        task_stream << task.function << std::endl;
+        task_stream << task.left_border << std::endl;
+        task_stream << task.right_border << std::endl;
+
+        task_stream << task.num_iter << std::endl;
+        task_stream << task.eps << std::endl;
+
+        task_stream.close();
+    }
+    //  Task #1
+    {
+        TaskGSA task;
+        task.function = "sin(x)";
         task.left_border = -30;
         task.right_border = 30;
 
