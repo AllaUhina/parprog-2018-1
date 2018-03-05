@@ -46,8 +46,9 @@ int main (int argc, char* argv[])
     //  Task #2 "(x/4)*cos(x)"
     {
         AnswerGSA answer;
-        answer.minX = 9 * PI;
-        answer.minY = -7.06858347057703478;
+        methodFSA("(x/4)*cos(x)", 28.0, 28.5, 0.00001, answer.minX, answer.minY);
+        /*answer.minX = 9 * PI;
+        answer.minY = -7.06858347057703478;*/
 
         std::ofstream answer_stream("../answers/answer_02.answ", std::ios::out | std::ios::binary);
 
@@ -59,7 +60,7 @@ int main (int argc, char* argv[])
     //  Task #3 "(x*sin((x^(0.5)))+cos(x)*x)/4"
     {
         AnswerGSA answer;
-        methodFSA("(x*sin((x^(0.5)))+cos(x)*x)/4", 28.0, 28.5, 0.00001, answer.minX, answer.minY);
+        methodFSA("(x*sin((x^(0.5)))+cos(x)*x)/4", 28.1, 28.5, 0.00001, answer.minX, answer.minY);
         /* answer.minX = 28.27; // need a full search
         answer.minY = -12.88; */
 

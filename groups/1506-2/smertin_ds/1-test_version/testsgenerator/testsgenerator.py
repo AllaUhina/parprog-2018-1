@@ -9,9 +9,10 @@ print("testsmaker is doing...")
 code = pr.call("../bin/tasksmaker")
 if code != 0:
     print("error of tasksmaker")
-print("testsmaker is done.")
+else:
+    print("testsmaker is done.")
 
-path = "../tasks/task_05.task"
+path = "../tasks/task_01.task"
 if (len(sys.argv) > 1):
     ind = int(sys.argv[1])
     path = tasks[ind]
@@ -22,4 +23,5 @@ print("gsa is doing with " + path)
 code = pr.call(["../bin/gsa", path])
 if code != 0:
     print("error of gsa")
-print("gsa is done.")
+else:
+    print("gsa is done.")
