@@ -81,11 +81,10 @@ int main (int argc, char* argv[])
 
     if ( ((answer.minY < result.minY + task.eps) && (answer.minY > result.minY - task.eps))
       || ((answer.minX < result.minX + task.eps) && (answer.minX > result.minX - task.eps)) ){
-        std::cout << "\n\tOK\n" << std::endl;
+        std::cout << "\n\t\033[1;32mOK\033[0m\n" << std::endl;
     } else {
-        std::cout << "\n\tFAIL\n" << std::endl;
+        std::cout << "\n\t\033[1;31mFAIL\033[0m\n" << std::endl;
     }
-
 
     return 0;
 }
