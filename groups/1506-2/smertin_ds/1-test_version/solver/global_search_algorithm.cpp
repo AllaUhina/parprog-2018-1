@@ -2,6 +2,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <iterator>
+#include <algorithm>
 
 #include "../tofunction/tofunction.h"
 
@@ -104,38 +107,39 @@ void methodGSA()
 	double maxM = 0;
 	double M;
 
-	double* x = new double[k];
+    struct Point
+    {
+        double x;
+        double y;
+        void operator=(const Point& p)
+        {
+            x = p.x;
+            y = p.y;
+        }
+    };
+	std::vector<Point> points;
 	double R;
 	double maxR = 0;
 	int maxIR = 0;
 
-	double minF;
-	double minX;
+	Point minPoint;
+    Point left_point, right_point;
 
-	x[0] = a; x[1] = b;
+	left_point.x = a; right_point.x = b;
+    left_point.y = f(left_point.x); right_point.y = f(right_point.x);
+    points.push_back(left_point); points.push_back(right_point);
 
-	if (f(x[0]) < f(x[1]))
-	{
-		minF = f(x[0]);
-		minX = x[0];
-	}
-	else
-	{
-		minF = f(x[1]);
-		minX = x[1];
-	}
-
+    minPoint = (left_point.y < right_point.y) ? left_point : right_point;
 
 	for (int i = 1; i < k - 1; ++i)
 	{
-		for (int j = 0; j < i; ++j)
-			for (int l = 0; l < i - j; ++l)
-				if (x[l] > x[l + 1])
-					std::swap(x[l], x[l + 1]);
+        std::sort(points.begin(), points.end(), [](const Point& a, const Point& b) {
+            return a.x < b.x;
+        });
 
 		for (int j = 1; j <= i; ++j)
 		{
-			M = (fabs(f(x[j]) - f(x[j - 1]))) / (x[j] - x[j - 1]);
+			M = (fabs(points[j].y - points[j - 1].y)) / (points[j].x - points [j - 1].x);
 			if (M > maxM)
 			{
 				maxM = M;
@@ -144,15 +148,15 @@ void methodGSA()
 
 		if (maxM > 0)
 		{
-			m = r*maxM;
+			m = r * maxM;
 		}
 
 		maxR = 0;
 		maxIR = 1;
 		for (int j = 1; j <= i; ++j)
 		{
-			R = m * (x[j] - x[j - 1]) + (pow((f(x[j]) - f(x[j - 1])), 2))
-				/ (m * (x[j] - x[j - 1])) - 2 * (f(x[j]) + f(x[j - 1]));
+			R = m * (points[j].x - points[j - 1].x) + (pow((points[j].y - points[j - 1].y), 2))
+				/ (m * (points[j].x - points[j - 1].x)) - 2 * (points[j].y + points[j - 1].y);
 
 			if (R > maxR)
 			{
@@ -161,23 +165,20 @@ void methodGSA()
 			}
 		}
 
-		if (fabs(x[maxIR] - x[maxIR - 1]) < eps)
+		if (fabs(points[maxIR].x - points[maxIR - 1].x) < eps)
 		{
 			break;
 		}
 
-		x[i + 1] = 0.5 * (x[maxIR] + x[maxIR - 1])
-                   - 0.5 * (f(x[maxIR]) - f(x[maxIR - 1])) / m;
+        Point newPoint;
+        newPoint.x = 0.5 * (points[maxIR].x + points[maxIR - 1].x)
+                   - 0.5 * (points[maxIR].y - points[maxIR - 1].y) / m;
+        newPoint.y = f(newPoint.x);
+        points.push_back(newPoint);
 
-		if (f(x[i + 1]) < minF)
-		{
-			minF = f(x[i + 1]);
-			minX = x[i + 1];
-		}
+        minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
 	}
 
-    delete[] x;
-
-    answer.minX = minX;
-    answer.minY = minF;
+    answer.minX = minPoint.x;
+    answer.minY = minPoint.y;
 }
