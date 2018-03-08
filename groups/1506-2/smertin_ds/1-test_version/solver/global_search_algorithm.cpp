@@ -31,7 +31,7 @@ void methodGSA();
 
 int main(int argc, char* argv[])
 {
-    const char* path_of_test = "../tasks/task_00.task";
+    const char* path_of_test = "../tasks/task_07.task";
 
     if (argc > 1){
         path_of_test = argv[1];

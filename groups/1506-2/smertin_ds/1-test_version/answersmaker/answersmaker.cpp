@@ -85,7 +85,75 @@ int main (int argc, char* argv[])
 
         answer_stream.close();
     }
+    //  Task #5 "(10*x*sin((x^(0.5)))+cos(x)*x)/100"
+    {
+        AnswerGSA answer;
+        methodFSA("(10*x*sin((x^(0.5)))+cos(x)*x)/100", 895.1, 895.6, 0.00001, answer.minX, answer.minY);
+        /* answer.minX = 895.3; // need a full search
+        answer.minY = -98.5; */
 
+        std::ofstream answer_stream("../answers/answer_05.answ", std::ios::out | std::ios::binary);
+
+        answer_stream << answer.minX << std::endl;
+        answer_stream << answer.minY << std::endl;
+
+        answer_stream.close();
+    }
+    //  Task #6 "(x*sin((x^(0.5)))+cos(x)*x*10)/100"
+    {
+        AnswerGSA answer;
+        methodFSA("(x*sin((x^(0.5)))+cos(x)*x*10)/100", 939.2, 939.4, 0.00001, answer.minX, answer.minY);
+        /* answer.minX = 939; // need a full search
+        answer.minY = -19892; */
+
+        std::ofstream answer_stream("../answers/answer_06.answ", std::ios::out | std::ios::binary);
+
+        answer_stream << answer.minX << std::endl;
+        answer_stream << answer.minY << std::endl;
+
+        answer_stream.close();
+    }
+    //  Task #7 "(2^x)*sin(x)"
+    {
+        AnswerGSA answer;
+        methodFSA("(x*sin((x^(0.5)))+cos(x/10)*x)/100", 910.4, 911.1, 0.00001, answer.minX, answer.minY);
+        /* answer.minX = 910.7; // need a full search
+        answer.minY = -19892; */
+
+        std::ofstream answer_stream("../answers/answer_07.answ", std::ios::out | std::ios::binary);
+
+        answer_stream << answer.minX << std::endl;
+        answer_stream << answer.minY << std::endl;
+
+        answer_stream.close();
+    }
+    //==========================================================================
+    //  Task #8 "(2^x)*sin(x)"
+    {
+        AnswerGSA answer;
+        answer.minX = 936;
+        answer.minY = -1;
+
+        std::ofstream answer_stream("../answers/answer_08.answ", std::ios::out | std::ios::binary);
+
+        answer_stream << answer.minX << std::endl;
+        answer_stream << answer.minY << std::endl;
+
+        answer_stream.close();
+    }
+    //  Task #9 "x^2+5*abs(x)-x"
+    {
+        AnswerGSA answer;
+        answer.minX = 4;
+        answer.minY = 4;
+
+        std::ofstream answer_stream("../answers/answer_09.answ", std::ios::out | std::ios::binary);
+
+        answer_stream << answer.minX << std::endl;
+        answer_stream << answer.minY << std::endl;
+
+        answer_stream.close();
+    }
     return 0;
 }
 
