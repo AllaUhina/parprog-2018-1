@@ -1,3 +1,5 @@
+#define OPEN_ERROR 2
+
 #include "Postfix.h"
 #include <math.h>
 #include <vector>
@@ -5,8 +7,8 @@
 #include <omp.h>
 #include <fstream>
 
-const int MAX_ITER = 1000;
-const double EPS = 0.001;
+const int MAX_ITER = 10000;
+const double EPS = 0.0001;
 const int PARAM_R = 2;
 
 using namespace std;
@@ -263,12 +265,10 @@ Point GlobalMinCalculation(TPostfix func, double a, double b)
 
 int main(int argc, char** argv)
 {
-	string path_to_test ="tests/test_00";
+	string path_to_test =argv[1];
 	ifstream test_stream(path_to_test, ios::in | ios::binary);
 	if (!test_stream) {
-		cout << "open " << path_to_test << " error" << endl;
-		cout << '`';
-		return 1;
+		return 2;
 	}
 	string function; double left_border, right_border;
 	test_stream >> function;
@@ -279,46 +279,41 @@ int main(int argc, char** argv)
 	TPostfix p; p.PutInfix(function); p.ToPostfix();
 	result = GlobalMinCalculation(p, left_border, right_border);
 	//Выводим результаты
-	char path_of_answer[] = "../results/result_00.rslt";
-	int path_task_length = sizeof(path_of_answer) / sizeof(char);
-	int path_answ_length = sizeof(path_of_answer) / sizeof(char);
+	char path_to_result[] = "results/result_00.rslt";
+	int path_test_length = sizeof(path_to_test) / sizeof(char);
+	int path_res_length = sizeof(path_to_result) / sizeof(char);
 
-	int ind_task;
-	for (int ind = 0; ind < path_task_length; ++ind) 
+	int testInd;
+	for (int ind = 0; ind < path_test_length; ++ind)
 	{
 		if (path_to_test[ind] == '_') 
 		{
-			ind_task = ind + 1;
+			testInd = ind + 1;
 			break;
 		}
 	}
 
-	int ind_answ;
-	for (int ind = 0; ind < path_answ_length; ++ind) 
+	int resInd;
+	for (int ind = 0; ind < path_res_length; ++ind)
 	{
-		if (path_of_answer[ind] == '_') 
+		if (path_to_result[ind] == '_')
 		{
-			ind_answ = ind + 1;
+			resInd = ind + 1;
 			break;
 		}
 	}
 
-	path_of_answer[ind_answ] = path_to_test[ind_task];
-	path_of_answer[ind_answ + 1] = path_to_test[ind_task + 1];
+	path_to_result[resInd] = path_to_test[testInd];
+	path_to_result[resInd + 1] = path_to_test[testInd + 1];
 
-	std::ofstream answer_stream(path_of_answer, ios::out | ios::binary);
-	if (!answer_stream) {
-		std::cout << "open " << path_of_answer << " error" << endl;
-		return 1;
+	std::ofstream result_stream(path_to_result, ios::out | ios::binary);
+	if (!result_stream) {
+		return 3;
 	}
-	answer_stream << result.x << endl;
-	answer_stream << result.y << endl;
-	answer_stream << result.z << endl;
-
-	answer_stream.close();
-	
-	cin >> left_border;
-	
+	result_stream << result.x << endl;
+	result_stream << result.y << endl;
+	result_stream << result.z << endl;
+	result_stream.close();
 	return 0;
 
 }

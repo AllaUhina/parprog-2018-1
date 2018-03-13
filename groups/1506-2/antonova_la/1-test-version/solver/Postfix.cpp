@@ -305,7 +305,7 @@ double TPostfix::Calculate(double X, double Y)
 			if (OperationIndex == 4)
 			{
 				i = i + 2;
-				stack.Push(sin((var1*3.14159265) / 180));
+				stack.Push(sin((var1*3.14159265359) / 180));
 				i++;
 				continue;
 			}
