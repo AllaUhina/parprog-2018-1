@@ -1,38 +1,7 @@
-#define OPEN_ERROR 2
-
-#include "Postfix.h"
-#include <math.h>
-#include <vector>
-#include <iostream>
-#include <omp.h>
-#include <fstream>
-
-const int MAX_ITER = 10000;
-const double EPS = 0.0001;
-const int PARAM_R = 2;
-
-using namespace std;
+#include "Solver.h"
 
 
-
-struct Point // оординаты точки в двумерном пространстве и значение функции в ней
-{
-	double x;
-	double y;
-	double z;
-	Point()
-	{
-		x = y = z = 0;
-	}
-	Point(double _x, double _y, double _z)
-	{
-		x = _x;
-		y = _y;
-		z = _z;
-	}
-};
-
-vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)//¬ставка новой точки в вектор и его сортировка
+vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)
 {
 	b.push_back(a);
 	size_t i = b.size() - 1;
@@ -51,7 +20,7 @@ vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)//¬ставка новой
 	return b;
 }
 
- double CalculateMBigMax(vector<Point> p, size_t k, bool is_x_dim)// Ќаходит максимальное значение ћ среди всех последовательных пар в векторе точек по х или по y
+ double CalculateMBigMax(vector<Point> p, size_t k, bool is_x_dim)
 {
 	double M_MAX = 0;
 	if (is_x_dim == true)
@@ -79,7 +48,7 @@ vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)//¬ставка новой
 	return M_MAX;
 }
 
- double CalculateMSmall( double M)//Ќаходит m дл€ уже вычисленного M в соотв. с алгоритмом
+ double CalculateMSmall( double M)
 {
 	if (M == 0)
 		return 1;
@@ -87,7 +56,7 @@ vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)//¬ставка новой
 		return M * PARAM_R;
 }
 
-vector< double> CalculateRs( double m, vector<Point> p, size_t k, bool is_x_dim)//¬ычисл€ет вектор значений R(i) - веро€тность нахождени€ минимума на интервале
+vector< double> CalculateRs( double m, vector<Point> p, size_t k, bool is_x_dim)
 {
 	vector< double> Ri;
 	Ri.resize(k - 1);
@@ -108,7 +77,7 @@ vector< double> CalculateRs( double m, vector<Point> p, size_t k, bool is_x_dim)
 	return Ri;
 }
 
-unsigned FindIntNumber(vector< double> Ri)//Ќаходит номер промежутка, соответствующего наибольшему значению веро€тности, нумераци€ с 1
+unsigned FindIntNumber(vector< double> Ri)
 {
 	if (Ri.size() == 1)
 		return 1;
@@ -121,7 +90,7 @@ unsigned FindIntNumber(vector< double> Ri)//Ќаходит номер промежутка, соответств
 	return t + 1;
 }
 
-vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  double _x)//¬ычисл€ет следующее значение координаты при х - фикс. и вставл€ет новую точку в вектор c учетом пересортировки
+vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  double _x)
 {
 	Point new_point;
 	new_point.x = _x;
@@ -131,7 +100,7 @@ vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  doub
 	return temp;
 }
 
- double CalculateYMin(TPostfix func, double a,  double b,  double _x)//¬ычисл€ет координату y, соотв. минмальному значению функции при фиксированном х
+ double CalculateYMin(TPostfix func, double a,  double b,  double _x)
 {
 	vector<Point> points(2);
 	vector<Point> temp(2);
@@ -183,7 +152,7 @@ vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  doub
 
 }
 
-vector<Point> InsertXNext(TPostfix func, vector<Point> p, int t, float m, float a, float b)//¬ычисл€ет следующее значение координаты с вычислением оптимального y и вставл€ет новую точку в вектор c учетом пересортировки
+vector<Point> InsertXNext(TPostfix func, vector<Point> p, int t, double m, double a, double b)
 {
 	Point new_point;
 	new_point.x = (p[t - 1].x + p[t].x) / 2 - (p[t].z - p[t - 1].z) / (2 * m);
@@ -263,57 +232,3 @@ Point GlobalMinCalculation(TPostfix func, double a, double b)
 	return true_min;
 }
 
-int main(int argc, char** argv)
-{
-	string path_to_test =argv[1];
-	ifstream test_stream(path_to_test, ios::in | ios::binary);
-	if (!test_stream) {
-		return 2;
-	}
-	string function; double left_border, right_border;
-	test_stream >> function;
-	test_stream >> left_border;
-	test_stream >> right_border;
-	test_stream.close();
-	Point result;
-	TPostfix p; p.PutInfix(function); p.ToPostfix();
-	result = GlobalMinCalculation(p, left_border, right_border);
-	//¬ыводим результаты
-	char path_to_result[] = "results/result_00.rslt";
-	int path_test_length = sizeof(path_to_test) / sizeof(char);
-	int path_res_length = sizeof(path_to_result) / sizeof(char);
-
-	int testInd;
-	for (int ind = 0; ind < path_test_length; ++ind)
-	{
-		if (path_to_test[ind] == '_') 
-		{
-			testInd = ind + 1;
-			break;
-		}
-	}
-
-	int resInd;
-	for (int ind = 0; ind < path_res_length; ++ind)
-	{
-		if (path_to_result[ind] == '_')
-		{
-			resInd = ind + 1;
-			break;
-		}
-	}
-
-	path_to_result[resInd] = path_to_test[testInd];
-	path_to_result[resInd + 1] = path_to_test[testInd + 1];
-
-	std::ofstream result_stream(path_to_result, ios::out | ios::binary);
-	if (!result_stream) {
-		return 3;
-	}
-	result_stream << result.x << endl;
-	result_stream << result.y << endl;
-	result_stream << result.z << endl;
-	result_stream.close();
-	return 0;
-
-}
