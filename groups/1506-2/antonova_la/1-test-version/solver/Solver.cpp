@@ -1,7 +1,7 @@
 #include "Solver.h"
 
 
-vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)
+vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)//¬ставка новой точки в вектор и его сортировка
 {
 	b.push_back(a);
 	size_t i = b.size() - 1;
@@ -20,7 +20,7 @@ vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)
 	return b;
 }
 
- double CalculateMBigMax(vector<Point> p, size_t k, bool is_x_dim)
+ double CalculateMBigMax(vector<Point> p, size_t k, bool is_x_dim)// Ќаходит максимальное значение ћ среди всех последовательных пар в векторе точек по х или по y
 {
 	double M_MAX = 0;
 	if (is_x_dim == true)
@@ -48,7 +48,7 @@ vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)
 	return M_MAX;
 }
 
- double CalculateMSmall( double M)
+ double CalculateMSmall( double M)//Ќаходит m дл€ уже вычисленного M в соотв. с алгоритмом
 {
 	if (M == 0)
 		return 1;
@@ -56,7 +56,7 @@ vector<Point> InsertSort(Point a, vector<Point> b, bool is_x_dim)
 		return M * PARAM_R;
 }
 
-vector< double> CalculateRs( double m, vector<Point> p, size_t k, bool is_x_dim)
+vector< double> CalculateRs( double m, vector<Point> p, size_t k, bool is_x_dim)//¬ычисл€ет вектор значений R(i) - веро€тность нахождени€ минимума на интервале
 {
 	vector< double> Ri;
 	Ri.resize(k - 1);
@@ -77,7 +77,7 @@ vector< double> CalculateRs( double m, vector<Point> p, size_t k, bool is_x_dim)
 	return Ri;
 }
 
-unsigned FindIntNumber(vector< double> Ri)
+unsigned FindIntNumber(vector< double> Ri)//Ќаходит номер промежутка, соответствующего наибольшему значению веро€тности, нумераци€ с 1
 {
 	if (Ri.size() == 1)
 		return 1;
@@ -90,7 +90,7 @@ unsigned FindIntNumber(vector< double> Ri)
 	return t + 1;
 }
 
-vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  double _x)
+vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  double _x)//¬ычисл€ет следующее значение координаты при х - фикс. и вставл€ет новую точку в вектор c учетом пересортировки
 {
 	Point new_point;
 	new_point.x = _x;
@@ -100,7 +100,7 @@ vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  doub
 	return temp;
 }
 
- double CalculateYMin(TPostfix func, double a,  double b,  double _x)
+ double CalculateYMin(TPostfix func, double a,  double b,  double _x)//¬ычисл€ет координату y, соотв. минмальному значению функции при фиксированном х
 {
 	vector<Point> points(2);
 	vector<Point> temp(2);
@@ -152,7 +152,7 @@ vector<Point> InsertYNext(TPostfix func,vector<Point> p, int t,  double m,  doub
 
 }
 
-vector<Point> InsertXNext(TPostfix func, vector<Point> p, int t, double m, double a, double b)
+vector<Point> InsertXNext(TPostfix func, vector<Point> p, int t, double m, double a, double b)//¬ычисл€ет следующее значение координаты с вычислением оптимального y и вставл€ет новую точку в вектор c учетом пересортировки
 {
 	Point new_point;
 	new_point.x = (p[t - 1].x + p[t].x) / 2 - (p[t].z - p[t - 1].z) / (2 * m);
