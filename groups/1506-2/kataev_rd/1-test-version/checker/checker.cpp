@@ -65,21 +65,23 @@ int main(int argc, char *argv[])
 		picPathRaw = "../../SourceImgs/";
 		picPathCustom = "../../CustomResults/";
 		outputPathCV = "../../CVResults/";
-
 		testName = "../../Tests/test" + to_string(i) + ".bin";
+		
+		//чтение файла задания
 		ifstream testFile;
 		testFile.open(testName, ios::in | ios::binary);
-
 		testFile >> picName;
 		testFile >> sigma;
 
+		//загрузка изображений на основании информации из задания
 		inFileRaw = imread(picPathRaw + picName, CV_LOAD_IMAGE_COLOR);
 		inFileCustom = imread(picPathCustom + picName, CV_LOAD_IMAGE_COLOR);
-
 		Mat outFileCV(inFileCustom.size(), CV_8UC3);
 
+		//применение к исходному изображению стандартной функции OpenCV
 		GaussianBlur(inFileRaw, outFileCV, Size(3, 3), sigma, 0, BORDER_DEFAULT);
 
+		//сравнение изображений, полученных OpenCV и solver и печать результата
 		double similarity = SSIM(inFileCustom, outFileCV);
 
 		cout << "Now testing image: " << i << endl;
@@ -88,6 +90,7 @@ int main(int argc, char *argv[])
 			cout << "PASS!" << endl << endl;
 		else cout << "FAIL!" << endl << endl;
 
+		//запись изображения, полученного функцией OpenCV
 		imwrite(outputPathCV + picName, outFileCV);
 
 		testFile.close();

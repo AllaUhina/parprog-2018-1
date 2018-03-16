@@ -29,28 +29,26 @@ int main(int argc, char *argv[])
 	double sum = 0;
 	string testName, picPathRaw, fileName, picName;
 
-	//загрузка изображения и создание выходного
+	//получение необходимых путей к директориям
 	string outputPathCustom = "../../CustomResults/";
 	picPathRaw = "../../SourceImgs/";
-
 	string tstStr = string(argv[1]);
-
 	testName = "../../Tests/" + tstStr;
+
+	//чтение из файла задания
 	ifstream testFile;
 	testFile.open(testName, ios::in | ios::binary);
-
 	testFile >> picName;
-	cout << picName << endl;
 	testFile >> sigma;
-	cout << sigma << endl;
 
 	fileName = outputPathCustom + picName;
 
+	//загрузка изображений
 	Mat inFile;
 	inFile = imread(picPathRaw + picName, CV_LOAD_IMAGE_COLOR);
 	Mat outFile(inFile.size(), CV_8UC3);
 	
-	//создание, заполнение и нормировка ядра
+	//создание, заполнение и нормировка ядра фильтра
 	double **gaussCore = new double*[size];
 	for (int i = 0; i < size; i++)
 		gaussCore[i] = new double[size];
@@ -72,6 +70,7 @@ int main(int argc, char *argv[])
 			gaussCore[i][j] /= sum;
 		}
 	}
+
 
 	//применение фильтра
 	double blue = 0, green = 0, red = 0;
@@ -101,6 +100,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	//запись полученного изображения
 	imwrite(fileName, outFile);
 
 	for (int i = 0; i < 3; i++)

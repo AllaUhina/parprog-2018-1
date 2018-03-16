@@ -1,3 +1,6 @@
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include <fstream>
 #include <random>
@@ -20,8 +23,8 @@ int main(int argc, char *argv[])
 		sigma = distribution(generator);
 
 		ofstream testFile;
-		testFile.open(testFileName, ios::out | ios::app | ios::binary);
-		testFile << pictureFileName << endl << sigma;
+		testFile.open(testFileName, ios::out | ios::trunc | ios::binary);
+		testFile << pictureFileName << " " << sigma;
 		testFile.close();
 	}
 	return 0;
