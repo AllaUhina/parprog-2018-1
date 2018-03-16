@@ -3,10 +3,12 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <fstream>
 #include <cmath>
-
+#include <string>
 
 using namespace cv;
+using namespace std;
 
 //функция для проверки невыхода за определенные границы (наиболее актуальна для значений пикселей)
 int control(int in, int a, int b)
@@ -20,18 +22,35 @@ int control(int in, int a, int b)
 
 int main(int argc, char *argv[])
 {	
+
+	int size = 3;
+	int radius = size / 2;
+	float sigma = 0;
+	double sum = 0;
+	string testName, picPathRaw, fileName, picName;
+
 	//загрузка изображения и создание выходного
+	string outputPathCustom = "../../CustomResults/";
+	picPathRaw = "../../SourceImgs/";
+
+	string tstStr = string(argv[1]);
+
+	testName = "../../Tests/" + tstStr;
+	ifstream testFile;
+	testFile.open(testName, ios::in | ios::binary);
+
+	testFile >> picName;
+	cout << picName << endl;
+	testFile >> sigma;
+	cout << sigma << endl;
+
+	fileName = outputPathCustom + picName;
 
 	Mat inFile;
-	inFile = imread(argv[1], CV_LOAD_IMAGE_COLOR);
+	inFile = imread(picPathRaw + picName, CV_LOAD_IMAGE_COLOR);
 	Mat outFile(inFile.size(), CV_8UC3);
 	
 	//создание, заполнение и нормировка ядра
-	int size = 3;
-	int radius = size/2;
-	float sigma = 1.5;
-	double sum = 0;
-
 	double **gaussCore = new double*[size];
 	for (int i = 0; i < size; i++)
 		gaussCore[i] = new double[size];
@@ -82,7 +101,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	imwrite("new.jpg", outFile);
+	imwrite(fileName, outFile);
 
 	for (int i = 0; i < 3; i++)
 		delete[] gaussCore[i];
