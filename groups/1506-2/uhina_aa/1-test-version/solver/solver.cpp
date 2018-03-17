@@ -15,25 +15,24 @@ int main(int argc, char * argv[]) {
 	int N;
 	double *A, *B, *C;
 
-	// перенаправляем поток stdin в файл matr.in
-	freopen_s(&f,"C:\\uhina_aa\\1-test-version\\generator\\matr.in", "rb", stdin);
-	// перенаправляем поток stdout в файл matr.out
+	freopen_s(&f,"..\\generator\\matr.in", "rb", stdin);
 	freopen_s(&f,"matr.out", "wb", stdout);
-	// cчитываем размерность матриц
+
+	//Razmernost matrix
 	fread(&N, sizeof(N), 1, stdin);
 
 	A = new double[N * N]; 
 	B = new double[N * N]; 
 	C = new double[N * N];
 
-	// cчитываем матрицу А
+	//Matrix A
 	fread(A, sizeof(*A), N * N, stdin);
-	// cчитываем матрицу В
+	//Matrix B
 	fread(B, sizeof(*B), N * N, stdin);
 
 	MatrMatrMult(A, B, C, N); 
 	
-	//записываем результат в matr.out
+	//Result to matrix C
 	fwrite(C, sizeof(*C), N * N, stdout);
 	return 0;
 }

@@ -16,6 +16,7 @@ int main()
 	int N;
 	double *A, *B;
 
+	//read from matr.txt to N, matrix A and B
 	ifstream fin(FName);
 	fin >> N;
 	A = new double[N * N];
@@ -40,14 +41,12 @@ int main()
 	freopen_s(&stream,"matr.bin", "wb", stdout); 
 	 
 	fwrite(&N, sizeof (N), 1, stdout); 
-	// создаём временный массив для строки матрицы 
 	double * cur = new double[N]; 
 
 	for(int i = 0; i < N; i++) 
 	{ 
 		for(int j = 0; j < N; j++) 
 			cur[j] = A[i*N + j];
-		// записываем строку в бинарном виде в файл 
 		fwrite(cur, sizeof (*cur), N, stdout); 
 	} 
 

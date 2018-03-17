@@ -14,21 +14,19 @@ int main(int argc, char * argv[]) {
 	int N;
 	double *A, *B, *C;
 
-	// перенаправляем поток stdin в файл matr.in
-	freopen_s(&f, "C:\\uhina_aa\\1-test-version\\generator\\matr.in", "rb", stdin);
-	// перенаправляем поток stdout в файл answer.txt
+	freopen_s(&f, "..\\generator\\matr.in", "rb", stdin);
 	freopen_s(&f, "answer.txt", "wb", stdout);
 
-	// cчитываем размерность матриц
+	//Razmernost
 	fread(&N, sizeof(N), 1, stdin);
 
 	A = new double[N * N];
 	B = new double[N * N];
 	C = new double[N * N];
 
-	// cчитываем матрицу А
+	//matrix A
 	fread(A, sizeof(*A), N * N, stdin);
-	// cчитываем матрицу В
+	//matrix B
 	fread(B, sizeof(*B), N * N, stdin);
 
 	for (int i = 0; i < N; i++)
@@ -41,7 +39,7 @@ int main(int argc, char * argv[]) {
 		}
 	}
 
-	//записываем результат в answer.txt
+	//write a result to matrix C
 	fwrite(C, sizeof(*C), N * N, stdout);
 	return 0;
 }

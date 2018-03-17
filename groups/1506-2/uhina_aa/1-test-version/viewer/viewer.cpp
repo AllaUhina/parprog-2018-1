@@ -12,18 +12,15 @@ FILE *stream1;
 
 int main()
 {
-	const char* FName = "C:\\uhina_aa\\1-test-version\\typer\\matr.bin";       //ѕуть к файлу
+	const char* FName = "..\\typer\\matr.bin";
 	const char* FName1 = "matr.txt";
-	const char* FName2 = "C:\\uhina_aa\\1-test-version\\solver\\matr.out";
+	const char* FName2 = "..\\solver\\matr.out";
 	/*freopen_s(&stream,, "r", stdin);
 	freopen_s(&stream1,"matr.txt", "w", stdout);*/
 	int N;
 	double *A, *B, *C;
 
-	
-
-	/**/
-
+	//read matrix A and matrix B
 	ifstream in(FName, ios::binary);
 	in.read((char*)&N, sizeof(N));
 	A = new double[N * N];
@@ -41,6 +38,7 @@ int main()
 
 	in.close();
 
+	//read matrix C
 	ifstream in2(FName2, ios::binary);
 	for (int i = 0; i < N*N; i++)
 	{
@@ -51,7 +49,6 @@ int main()
 	ofstream out;
 	out.open(FName1);
 	out<<N<<endl;
-
 	out << endl;
 	out << "Matrix A:" << endl;
 	for (int i = 0; i < N; i++)
