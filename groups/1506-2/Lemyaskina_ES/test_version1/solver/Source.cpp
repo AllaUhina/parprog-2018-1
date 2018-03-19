@@ -43,8 +43,7 @@ int main(int argc,char* argv[])
 	string path="../test/task/5.in";
 	if (argc > 1)
 		path = argv[1];
-	if (right < left)
-		throw invalid_argument("Right is lower than a left. \n");
+	
 	ifstream functionS(path, ios::in | ios::binary);//поток для результата
 	if (functionS)
 	{	
@@ -53,6 +52,8 @@ int main(int argc,char* argv[])
 	functionS >> right;
 	}
 		else return -1;//не открыта задача
+		if (right < left)
+	throw invalid_argument("Right is lower than a left. \n");
 	int num = numOfIter;
 	double res=0;
 	int k = 0;
