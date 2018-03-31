@@ -24,6 +24,6 @@ else:
 print("gsa is doing with " + path)
 code = pr.call(["../bin/executables/gsa", path])
 if code != 0:
-    print("error of gsa")
+    print("\n\n\terror of gsa\n\n")
 else:
     print("gsa is done.")
