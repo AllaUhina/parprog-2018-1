@@ -76,60 +76,65 @@ CCSmatrix transposeMatrix(CCSmatrix &matr)
 
 int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
 {
-	int total_cnt=0;
+	int total_cnt=0;//число элементов
 	if (A.size!=B.size)
 		throw "size error";
 
 	CCSmatrix AT;
 	AT=transposeMatrix(A);
-
-	vector<int>cols;
-	vector<double> vals;
-	vector<int>inds;
-
-	inds.push_back(0);
-
-	int tmpInd;
 	
-	for (int i=0;i<AT.size;i++)
-	{		
-		tmpInd=0;
-		for (int j=0;j<AT.size;j++)
+	B=transposeMatrix(B);
+	B=transposeMatrix(B);
+
+	int N=AT.size;
+	vector<int> columns;
+	vector<double> values;
+	vector<int> row_index;
+	int i, j, k;
+	int NZ = 0;
+	int *temp = new int[N];
+	row_index.push_back(0);
+	for (i = 0; i < N; i++) 
+	{ 
+		memset(temp, -1, N * sizeof(int)); 
+		int ind1 = AT.ind[i], ind2 = AT.ind[i + 1]; 
+		for (j = ind1; j < ind2; j++)
 		{
-			double sum=0;
-			//---------------
-			for (int k=AT.ind[i];k<AT.ind[i+1];k++)
-			{
-				for (int l=B.ind[j];l<B.ind[j+1];l++)
-					if(AT.numberOfRow[k]==B.numberOfRow[l])
-					{
-						sum+=AT.value[k]*B.value[l];
-						break;
-					}
+			int col = AT.numberOfRow[j];
+			temp[col] = j; 
+		} 
+		for (j = 0; j < N; j++) 
+		{ 
+			double sum = 0;
+			int ind3 = B.ind[j], ind4 = B.ind[j + 1];
+			for (k = ind3; k < ind4; k++) 
+			{ 
+				int bcol = B.numberOfRow[k];
+				int aind = temp[bcol];
+				if (aind != -1)
+					sum += AT.value[aind] * B.value[k]; 
 			}
-			//--------------
 
-			if (abs(sum)>0)
-			{
-				total_cnt++;
-				cols.push_back(j);
-				vals.push_back(sum);
-				tmpInd++;
-			}
-		}
-		inds.push_back(tmpInd+inds[i]);
+				if (fabs(sum) > 0) 
+				{ 
+					columns.push_back(j); 
+					values.push_back(sum); 
+					NZ++;
+				} 
+			} 
+		row_index.push_back(NZ);
+	} 
+	init_CCSmatrix(N,NZ,res);
+	for (j = 0; j < NZ; j++) 
+	{ 
+		res.numberOfRow[j] = columns[j];
+		res.value[j] = values[j];
 	}
-	init_CCSmatrix(AT.size,cols.size(),res);
-	for (int i=0;i<cols.size();i++)
-	{
-		res.numberOfRow[i]=cols[i];
-		res.value[i]=vals[i];
-	}
-	
-	for (int i=0;i<inds.size();i++)
-		res.ind[i]=inds[i];
+	for(i = 0; i <= N; i++) 
+		res.ind[i] = row_index[i];
+	delete [] temp;
 	res=transposeMatrix(res);
-	return total_cnt;
+	return res.countOfElems;
 }
 
 int main(int argc, char * argv[])
@@ -142,6 +147,12 @@ int main(int argc, char * argv[])
 		file_name=argv[1];
 		file_output=argv[2];
 	}
+	else
+	{
+		file_name="1";
+		file_output="1tst.ans";
+	}
+
 cout<<"======================================================\n";
 	FILE *fl=fopen(file_name,"rb");
 	int test_size,test_count,buf_Row,buf_Ind;
@@ -164,11 +175,11 @@ cout<<"======================================================\n";
 	fread(B_test.value,sizeof(*B_test.value),test_size*test_count,fl);
 	fread(B_test.numberOfRow,sizeof(*B_test.numberOfRow),test_size*test_count,fl);
 	fread(B_test.ind,sizeof(*B_test.ind),test_size+1,fl);
-	
-	
 
-	el_cnt=multiply(A_test,B_test,rslt);
 	
+	
+	el_cnt=multiply(A_test,B_test,rslt);
+
 	//запись результата в файл
 	/*cout<<"vals\n";
 	for(int i=0;i<el_cnt;i++)
@@ -179,12 +190,14 @@ cout<<"======================================================\n";
 	cout<<"inds\n";
 	for(int i=0;i<test_size+1;i++)
 		cout<<rslt.ind[i]<<" | ";*/
+
+
 	cout<<"successfully calculated \n";
 	cout<<"------------------------------\n";
 	cout<<"res_test \n";
 	fl=fopen(file_output,"wb");
-	fwrite(&el_cnt,sizeof(el_cnt),1,fl);//число ненул эл-тов
-	fwrite(&test_size,sizeof(test_size),1,fl);//размерность
+	//fwrite(&el_cnt,sizeof(el_cnt),1,fl);//число ненул эл-тов
+	//fwrite(&test_size,sizeof(test_size),1,fl);//размерность
 	cout<<el_cnt<<" is count of res elems\n";
 	fwrite(rslt.value,sizeof(*rslt.value),el_cnt,fl);
 	fwrite(rslt.numberOfRow,sizeof(*rslt.numberOfRow),el_cnt,fl);
