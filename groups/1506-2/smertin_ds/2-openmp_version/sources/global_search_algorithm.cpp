@@ -124,6 +124,7 @@ void methodGSA() {
     };
 
     auto num_threads = omp_get_max_threads();
+    omp_set_num_threads(num_threads);
 
     std::vector<Point> points(k);
     std::vector<Characteristic> maxCh(num_threads);
@@ -156,10 +157,12 @@ void methodGSA() {
             return a.x < b.x;
         });
 
+#pragma omp parallel for private(M) reduction(max : maxM)
         for (int j = 1; j <= i; ++j) {
             M = (fabs(points[j].y - points[j - 1].y)) / (points[j].x - points[j - 1].x);
             maxM = (M > maxM) ? M : maxM;
         }
+
         if (maxM > 0) {
             m = r * maxM;
         }
