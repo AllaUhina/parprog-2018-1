@@ -10,8 +10,6 @@
 
 #include "./tofunction/tofunction.h"
 
-//#define num_threads 8
-
 struct TaskGSA {
     std::string function;
     double left_border;
@@ -131,6 +129,8 @@ void methodGSA() {
 
     Point left_point, right_point;
 
+    auto start_time = omp_get_wtime();
+
     left_point.x = a;
     right_point.x = b;
     left_point.y = f(left_point.x);
@@ -150,8 +150,8 @@ void methodGSA() {
         minPoint = (current_point.y < minPoint.y) ? left_point : minPoint;
     }
 
-    int i;
-    for (i = num_threads; i < k - 1 - num_threads; i += num_threads) {
+    int num_iter = 0;
+    for (int i = num_threads; i < k - 1 - num_threads; i += num_threads) {
 
         std::sort(points.begin(), points.begin() + i, [](const Point &a, const Point &b) {
             return a.x < b.x;
@@ -197,7 +197,6 @@ void methodGSA() {
 #pragma omp parallel
         {
             auto current_thread = omp_get_thread_num();
-            //for (int current_thread = 0; current_thread < num_threads; ++current_thread) {
             Point newPoint;
             newPoint.x = 0.5 * (points[maxCh[current_thread].iter].x + points[maxCh[current_thread].iter - 1].x)
                          - 0.5 * (points[maxCh[current_thread].iter].y - points[maxCh[current_thread].iter - 1].y) / m;
@@ -209,10 +208,15 @@ void methodGSA() {
                 minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
             }
         }
-        //std::cout << "\t" << minPoint.x << " " << minPoint.y << std::endl;
+        ++num_iter;
     }
 
-    std::cout << i << std::endl;
+    auto finish_time = omp_get_wtime();
+
+    std::cout << "\n\tReport:" << std::endl;
+    std::cout << "Number of iterations: "<< num_iter << std::endl;
+    std::cout << "Time of working: "<< finish_time - start_time << "\n" << std::endl;
+
     answer.minX = minPoint.x;
     answer.minY = minPoint.y;
 }

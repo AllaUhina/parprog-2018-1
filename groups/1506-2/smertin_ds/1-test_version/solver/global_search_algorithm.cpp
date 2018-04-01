@@ -125,6 +125,8 @@ void methodGSA()
 	Point minPoint;
     Point left_point, right_point;
 
+    auto start_time = omp_get_wtime();
+
 	left_point.x = a; right_point.x = b;
     left_point.y = f(left_point.x); right_point.y = f(right_point.x);
     points.push_back(left_point); points.push_back(right_point);
@@ -178,6 +180,11 @@ void methodGSA()
 
         minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
 	}
+
+    auto finish_time = omp_get_wtime();
+    std::cout << "\n\tReport:" << std::endl;
+    std::cout << "Number of iterations: "<< num_iter << std::endl;
+    std::cout << "Time of working: "<< finish_time - start_time << "\n" << std::endl;
 
     answer.minX = minPoint.x;
     answer.minY = minPoint.y;
