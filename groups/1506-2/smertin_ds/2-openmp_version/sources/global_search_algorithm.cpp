@@ -6,12 +6,13 @@
 #include <iterator>
 #include <algorithm>
 
+#include <omp.h>
+
 #include "./tofunction/tofunction.h"
 
-#define num_threads 4
+//#define num_threads 8
 
-struct TaskGSA
-{
+struct TaskGSA {
     std::string function;
     double left_border;
     double right_border;
@@ -20,8 +21,7 @@ struct TaskGSA
     double eps;
 } task;
 
-struct AnswerGSA
-{
+struct AnswerGSA {
     double minX;
     double minY;
 } answer;
@@ -29,13 +29,13 @@ struct AnswerGSA
 ToFunction toFunc;
 
 double f(double);
+
 void methodGSA();
 
-int main(int argc, char* argv[])
-{
-    const char* path_of_test = "../bin/tasks/task_03";
+int main(int argc, char *argv[]) {
+    const char *path_of_test = "../bin/tasks/task_03";
 
-    if (argc > 1){
+    if (argc > 1) {
         path_of_test = argv[1];
     }
 
@@ -89,51 +89,51 @@ int main(int argc, char* argv[])
 
     answer_stream.close();
 
-	return 0;
+    return 0;
 }
 
-double f(double x)
-{
+double f(double x) {
     toFunc.Calculate(x);
 }
 
-void methodGSA()
-{
-	const double a = task.left_border;
-	const double b = task.right_border;
+void methodGSA() {
+    const double a = task.left_border;
+    const double b = task.right_border;
     double eps = task.eps;
-	int k = task.num_iter;
+    int k = task.num_iter;
 
     const double r = 3;
-	double m = 1;
-	double maxM = 0;
-	double M;
+    double m = 1;
+    double maxM = 0;
+    double M;
+    double R;
 
-    struct Point
-    {
+    struct Point {
         double x;
         double y;
-        Point& operator=(const Point& p)
-        {
+
+        Point &operator=(const Point &p) {
             this->x = p.x;
             this->y = p.y;
             return *this;
         }
     };
-    struct Characteristic
-    {
+    struct Characteristic {
         double R;
         int iter;
     };
 
-	std::vector<Point> points(k);
-	double R;
-	std::vector<Characteristic> maxCh(num_threads);
+    auto num_threads = omp_get_max_threads();
+
+    std::vector<Point> points(k);
+    std::vector<Characteristic> maxCh(num_threads);
 
     Point left_point, right_point;
 
-	left_point.x = a; right_point.x = b;
-    left_point.y = f(left_point.x); right_point.y = f(right_point.x);
+    left_point.x = a;
+    right_point.x = b;
+    left_point.y = f(left_point.x);
+    right_point.y = f(right_point.x);
 
     points[0] = left_point;
     points[num_threads] = right_point;
@@ -150,29 +150,30 @@ void methodGSA()
     }
 
     int i;
-	for (i = num_threads; i < k - 1 - num_threads; i += num_threads) {
+    for (i = num_threads; i < k - 1 - num_threads; i += num_threads) {
 
-        std::sort(points.begin(), points.begin() + i, [](const Point& a, const Point& b) {
+        std::sort(points.begin(), points.begin() + i, [](const Point &a, const Point &b) {
             return a.x < b.x;
         });
 
-		for (int j = 1; j <= i; ++j) {
-			M = (fabs(points[j].y - points[j - 1].y)) / (points[j].x - points [j - 1].x);
-			maxM = (M > maxM) ? M : maxM;
-		}
-		if (maxM > 0) {
-			m = r * maxM;
-		}
+        for (int j = 1; j <= i; ++j) {
+            M = (fabs(points[j].y - points[j - 1].y)) / (points[j].x - points[j - 1].x);
+            maxM = (M > maxM) ? M : maxM;
+        }
+        if (maxM > 0) {
+            m = r * maxM;
+        }
 
         for (int j = 0; j < num_threads; ++j) {
             maxCh[j].R = 0;
             maxCh[j].iter = 1;
         }
-		for (int j = 1; j <= i; ++j) {
-			R = m * (points[j].x - points[j - 1].x) + (pow((points[j].y - points[j - 1].y), 2))
-				/ (m * (points[j].x - points[j - 1].x)) - 2 * (points[j].y + points[j - 1].y);
+        for (int j = 1; j <= i; ++j) {
+            R = m * (points[j].x - points[j - 1].x) + (pow((points[j].y - points[j - 1].y), 2))
+                                                      / (m * (points[j].x - points[j - 1].x)) -
+                2 * (points[j].y + points[j - 1].y);
 
-            for(int id = 0; id < num_threads; ++id) {
+            for (int id = 0; id < num_threads; ++id) {
                 if (R > maxCh[id].R) {
                     maxCh[id].R = R;
                     maxCh[id].iter = j;
@@ -180,26 +181,33 @@ void methodGSA()
                 }
             }
             std::sort(maxCh.begin(), maxCh.end(),
-                      [](const Characteristic& a, const Characteristic& b) {
+                      [](const Characteristic &a, const Characteristic &b) {
                           return a.R < b.R;
                       }
             );
-		}
+        }
 
-		if (fabs(points[maxCh[num_threads - 1].iter].x - points[maxCh[num_threads - 1].iter - 1].x) < eps) {
-			break;
-		}
+        if (fabs(points[maxCh[num_threads - 1].iter].x - points[maxCh[num_threads - 1].iter - 1].x) < eps) {
+            break;
+        }
 
-        for (int current_thread = 0; current_thread < num_threads; ++current_thread) {
+#pragma omp parallel
+        {
+            auto current_thread = omp_get_thread_num();
+            //for (int current_thread = 0; current_thread < num_threads; ++current_thread) {
             Point newPoint;
             newPoint.x = 0.5 * (points[maxCh[current_thread].iter].x + points[maxCh[current_thread].iter - 1].x)
                          - 0.5 * (points[maxCh[current_thread].iter].y - points[maxCh[current_thread].iter - 1].y) / m;
             newPoint.y = f(newPoint.x);
             points[i + 1 + current_thread] = newPoint;
-            minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
+
+#pragma omp critical
+            {
+                minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
+            }
         }
         //std::cout << "\t" << minPoint.x << " " << minPoint.y << std::endl;
-	}
+    }
 
     std::cout << i << std::endl;
     answer.minX = minPoint.x;
