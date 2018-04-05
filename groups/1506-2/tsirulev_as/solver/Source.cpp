@@ -2,7 +2,7 @@
 
 //======== !!!!!!!!!!!!! СТОЛБЦОВЫЙ  !!!!!!!!!!!!! =====================
 
-
+#include <omp.h>
 #include <vector>
 #include <iostream>
 using namespace std;
@@ -27,13 +27,16 @@ void init_CCSmatrix(int sz, int cnt, CCSmatrix &matr)
 	matr.value=new double[cnt];
 	matr.numberOfRow=new int[cnt];
 	matr.ind=new int[sz+1];
-	for (int i=0;i<sz+1;i++)
-		matr.ind[i]=0;
-	for (int i=0;i<cnt;i++)
+	/*for (int i=0;i<sz+1;i++)
+		matr.ind[i]=0;*/
+	memset(matr.ind,0,sizeof(int)*(sz+1));
+	memset(matr.value,0,sizeof(double)*cnt);
+	memset(matr.numberOfRow,0,sizeof(int)*cnt);
+	/*for (int i=0;i<cnt;i++)
 	{
 		matr.value[i]=0;
 		matr.numberOfRow[i]=0;
-	}
+	}*/
 }
 
 // нужно транспонировать А 
@@ -86,57 +89,99 @@ int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
 	B=transposeMatrix(B);
 	B=transposeMatrix(B);
 
-	int N=AT.size;
-	vector<int> columns;
-	vector<double> values;
-	vector<int> row_index;
+	int N=A.size;
 	int i, j, k;
-	int NZ = 0;
-	int *temp = new int[N];
-	row_index.push_back(0);
-	for (i = 0; i < N; i++) 
+	cout<<"N is "<<N<<endl;
+	vector<int> *rows = new vector<int>[N];
+	vector<double> *values = new vector<double>[N];
+	int* row_index = new int[N + 1];
+	memset(row_index, 0, sizeof(int) * N);
+	cout<<"start of parallel\n";
+#pragma omp parallel 
 	{ 
-		memset(temp, -1, N * sizeof(int)); 
-		int ind1 = AT.ind[i], ind2 = AT.ind[i + 1]; 
-		for (j = ind1; j < ind2; j++)
-		{
-			int col = AT.numberOfRow[j];
-			temp[col] = j; 
-		} 
-		for (j = 0; j < N; j++) 
+		int *temp = new int[N];
+
+#pragma omp for private(i,j,k)
+		for (i = 0; i < N; i++) 
 		{ 
-			double sum = 0;
-			int ind3 = B.ind[j], ind4 = B.ind[j + 1];
-			for (k = ind3; k < ind4; k++) 
+			memset(temp, -1, N * sizeof(int)); 
+			int ind1 = AT.ind[i], ind2 = AT.ind[i + 1]; 
+			for (j = ind1; j < ind2; j++)
+			{
+				int col = AT.numberOfRow[j];
+				temp[col] = j; 
+			} 
+			for (j = 0; j < N; j++) 
 			{ 
-				int bcol = B.numberOfRow[k];
-				int aind = temp[bcol];
-				if (aind != -1)
-					sum += AT.value[aind] * B.value[k]; 
-			}
+				double sum = 0;
+				int ind3 = B.ind[j], ind4 = B.ind[j + 1];
+				for (k = ind3; k < ind4; k++) 
+				{ 
+					int bcol = B.numberOfRow[k];
+					int aind = temp[bcol];
+					if (aind != -1)
+						sum += AT.value[aind] * B.value[k]; 
+				}
 
 				if (fabs(sum) > 0) 
 				{ 
-					columns.push_back(j); 
-					values.push_back(sum); 
-					NZ++;
+					rows[i].push_back(j); 
+					values[i].push_back(sum); 
+					row_index[i]++;
 				} 
 			} 
-		row_index.push_back(NZ);
-	} 
-	init_CCSmatrix(N,NZ,res);
-	for (j = 0; j < NZ; j++) 
-	{ 
-		res.numberOfRow[j] = columns[j];
-		res.value[j] = values[j];
+		} 
+		delete [] temp;
 	}
-	for(i = 0; i <= N; i++) 
-		res.ind[i] = row_index[i];
-	delete [] temp;
-	res=transposeMatrix(res);
-	return res.countOfElems;
+	cout<<"parallel is nice\n";
+		int NZ = 0;
+		for(i = 0; i < N; i++) 
+		{ 
+			int tmp = row_index[i];
+			row_index[i] = NZ;
+			NZ += tmp; 
+		} 
+		row_index[N] = NZ;
+		init_CCSmatrix(N,NZ,res);
+		cout<<"res is inited\n";
+		int count = 0;
+		cout<<"start of copying vectors\n";
+		for (i = 0; i < N; i++) //тут и начинается лажа. Это точно
+		{ 
+			int size = rows[i].size();
+			if(size!=0)
+			{
+				cout<<"start of "<<i<<" row memcpy\n";
+				cout<<"count is "<<count<<"size is "<<size<<endl;
+				memcpy(&res.numberOfRow[count], &rows[i][0], size * sizeof(int));
+				cout<<"start of val memcpy\n";
+				memcpy(&res.value[count], &values[i][0], size * sizeof(double));
+				cout<<"memcpy "<<i<<" ended\n";
+				count += size; 
+			}
+			//else
+			//	count++;
+			
+			
+		} 
+		cout<<"end of copying vectors\n";
+		memcpy(res.ind, &row_index[0], (N + 1) * sizeof(int));
+		//посмотрим что он вообще выводит
+		/*for (int t=0;t<res.countOfElems;t++)
+			cout<<res.value[t]<<"|";
+		cout<<endl;
+		for (int t=0;t<res.countOfElems;t++)
+			cout<<res.numberOfRow[t]<<"|";
+		cout<<endl;
+		for (int t=0;t<res.size+1;t++)
+			cout<<res.ind[t]<<"|";
+		cout<<endl<<"+++++++++++++++++++++++++++++\n";*/
+		delete [] row_index;
+		delete [] rows;
+		delete [] values;	
+		res=transposeMatrix(res);
+	return NZ;
 }
-
 int main(int argc, char * argv[])
 {
 	char *file_name,*file_output;
