@@ -127,30 +127,37 @@ void methodGSA() {
     std::vector<Point> points(k);
     std::vector<Characteristic> maxCh(num_threads);
 
-    Point left_point, right_point;
-
     auto start_time = omp_get_wtime();
 
-    left_point.x = a;
-    right_point.x = b;
-    left_point.y = f(left_point.x);
-    right_point.y = f(right_point.x);
+    points[0].x = a;
+    points[num_threads].x = b;
+    points[0].y = f(points[0].x);
+    points[num_threads].y = f(points[num_threads].x);
 
-    points[0] = left_point;
-    points[num_threads] = right_point;
-    Point minPoint = (left_point.y < right_point.y) ? left_point : right_point;
+    Point minPoint = (points[0].y < points[num_threads].y) ? points[0] : points[num_threads];
+
+    int num_iter = 0;
 
     auto step = (b - a) / num_threads;
-    Point current_point = left_point;
+
+#pragma omp parallel
+{
+    Point current_point = points[0];
+    Point minPoint_thr = minPoint;
+#pragma omp for private(current_point)
     for (int j = 1; j < num_threads; ++j) {
         current_point.x += step;
         current_point.y = f(current_point.x);
         points[j] = current_point;
 
-        minPoint = (current_point.y < minPoint.y) ? left_point : minPoint;
+        minPoint_thr = (current_point.y < minPoint_thr.y) ? current_point : minPoint_thr;
     }
+#pragma omp critical
+    {
+        minPoint = (minPoint_thr.y < minPoint.y) ? minPoint_thr : minPoint;
+    }
+}
 
-    int num_iter = 0;
     for (int i = num_threads; i < k - 1 - num_threads; i += num_threads) {
 
         std::sort(points.begin(), points.begin() + i, [](const Point &a, const Point &b) {
@@ -171,10 +178,10 @@ void methodGSA() {
             maxCh[j].R = 0;
             maxCh[j].iter = 1;
         }
+        // queue required
         for (int j = 1; j <= i; ++j) {
-            R = m * (points[j].x - points[j - 1].x) + (pow((points[j].y - points[j - 1].y), 2))
-                                                      / (m * (points[j].x - points[j - 1].x)) -
-                2 * (points[j].y + points[j - 1].y);
+            R = m * (points[j].x - points[j - 1].x) + (points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y)
+            / (m * (points[j].x - points[j - 1].x)) - 2 * (points[j].y + points[j - 1].y);
 
             for (int id = 0; id < num_threads; ++id) {
                 if (R > maxCh[id].R) {
