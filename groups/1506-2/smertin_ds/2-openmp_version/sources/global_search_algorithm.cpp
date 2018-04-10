@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include <iterator>
 #include <algorithm>
 
@@ -103,6 +104,7 @@ void methodGSA() {
     const double r = 3;
     double m = 1;
     double maxM = 0;
+    double last_m;
     double M;
     double R;
 
@@ -119,13 +121,18 @@ void methodGSA() {
     struct Characteristic {
         double R;
         int iter;
+
+        bool operator<(const Characteristic &a) const {
+            return (R > a.R);
+        }
     };
 
     auto num_threads = omp_get_max_threads();
     omp_set_num_threads(num_threads);
 
     std::vector<Point> points(k);
-    std::vector<Characteristic> maxCh(num_threads);
+    std::vector<Point> newPoints(num_threads);
+    std::multiset<Characteristic> maxCh;
 
     auto start_time = omp_get_wtime();
 
@@ -134,6 +141,7 @@ void methodGSA() {
     points[0].y = f(points[0].x);
     points[num_threads].y = f(points[num_threads].x);
 
+    Point newPoint;
     Point minPoint = (points[0].y < points[num_threads].y) ? points[0] : points[num_threads];
 
     int num_iter = 0;
@@ -141,22 +149,22 @@ void methodGSA() {
     auto step = (b - a) / num_threads;
 
 #pragma omp parallel
-{
-    Point current_point = points[0];
-    Point minPoint_thr = minPoint;
-#pragma omp for private(current_point)
-    for (int j = 1; j < num_threads; ++j) {
-        current_point.x += step;
-        current_point.y = f(current_point.x);
-        points[j] = current_point;
-
-        minPoint_thr = (current_point.y < minPoint_thr.y) ? current_point : minPoint_thr;
-    }
-#pragma omp critical
     {
-        minPoint = (minPoint_thr.y < minPoint.y) ? minPoint_thr : minPoint;
+        Point current_point = points[0];
+        Point minPoint_thr = minPoint;
+#pragma omp for private(current_point)
+        for (int j = 1; j < num_threads; ++j) {
+            current_point.x += step;
+            current_point.y = f(current_point.x);
+            points[j] = current_point;
+
+            minPoint_thr = (current_point.y < minPoint_thr.y) ? current_point : minPoint_thr;
+        }
+#pragma omp critical
+        {
+            minPoint = (minPoint_thr.y < minPoint.y) ? minPoint_thr : minPoint;
+        }
     }
-}
 
     for (int i = num_threads; i < k - 1 - num_threads; i += num_threads) {
 
@@ -170,49 +178,39 @@ void methodGSA() {
             maxM = (M > maxM) ? M : maxM;
         }
 
+        last_m = m;
+
         if (maxM > 0) {
             m = r * maxM;
         }
 
-        for (int j = 0; j < num_threads; ++j) {
-            maxCh[j].R = 0;
-            maxCh[j].iter = 1;
-        }
-        // queue required
+        Characteristic current_ch;
+        maxCh.clear();
         for (int j = 1; j <= i; ++j) {
-            R = m * (points[j].x - points[j - 1].x) + (points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y)
-            / (m * (points[j].x - points[j - 1].x)) - 2 * (points[j].y + points[j - 1].y);
-
-            for (int id = 0; id < num_threads; ++id) {
-                if (R > maxCh[id].R) {
-                    maxCh[id].R = R;
-                    maxCh[id].iter = j;
-                    break;
-                }
-            }
-            std::sort(maxCh.begin(), maxCh.end(),
-                      [](const Characteristic &a, const Characteristic &b) {
-                          return a.R < b.R;
-                      }
-            );
+            current_ch.R = m * (points[j].x - points[j - 1].x) +
+                           (points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y)
+                           / (m * (points[j].x - points[j - 1].x)) - 2 * (points[j].y + points[j - 1].y);
+            current_ch.iter = j;
+            maxCh.insert(current_ch);
         }
 
-        if (fabs(points[maxCh[num_threads - 1].iter].x - points[maxCh[num_threads - 1].iter - 1].x) < eps) {
+
+        if (fabs(points[(*maxCh.cbegin()).iter].x - points[(*maxCh.cbegin()).iter - 1].x) < eps) {
             break;
         }
 
-#pragma omp parallel
+#pragma omp parallel private(newPoints)
         {
             auto current_thread = omp_get_thread_num();
-            Point newPoint;
-            newPoint.x = 0.5 * (points[maxCh[current_thread].iter].x + points[maxCh[current_thread].iter - 1].x)
-                         - 0.5 * (points[maxCh[current_thread].iter].y - points[maxCh[current_thread].iter - 1].y) / m;
-            newPoint.y = f(newPoint.x);
+            auto iter = (*std::next(maxCh.cbegin(), current_thread)).iter;
+            newPoints[current_thread].x = 0.5 * (points[iter].x + points[iter - 1].x)
+                                          - 0.5 * (points[iter].y - points[iter - 1].y) / m;
+            newPoints[current_thread].y = f(newPoint.x);
             points[i + 1 + current_thread] = newPoint;
 
 #pragma omp critical
             {
-                minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
+                minPoint = (newPoints[current_thread].y < minPoint.y) ? newPoints[current_thread] : minPoint;
             }
         }
         ++num_iter;
@@ -221,8 +219,8 @@ void methodGSA() {
     auto finish_time = omp_get_wtime();
 
     std::cout << "\n\tReport:" << std::endl;
-    std::cout << "Number of iterations: "<< num_iter << std::endl;
-    std::cout << "Time of working: "<< finish_time - start_time << "\n" << std::endl;
+    std::cout << "Number of iterations: " << num_iter << std::endl;
+    std::cout << "Time of working: " << finish_time - start_time << "\n" << std::endl;
 
     answer.minX = minPoint.x;
     answer.minY = minPoint.y;
