@@ -27,17 +27,11 @@ void init_CCSmatrix(int sz, int cnt, CCSmatrix &matr)
 	matr.value=new double[cnt];
 	matr.numberOfRow=new int[cnt];
 	matr.ind=new int[sz+1];
-	/*for (int i=0;i<sz+1;i++)
-		matr.ind[i]=0;*/
+	
 	memset(matr.ind,0,sizeof(int)*(sz+1));
 	memset(matr.value,0,sizeof(double)*cnt);
 	memset(matr.numberOfRow,0,sizeof(int)*cnt);
-	/*for (int i=0;i<cnt;i++)
-	{
-		matr.value[i]=0;
-		matr.numberOfRow[i]=0;
-	}*/
-}
+
 
 // нужно транспонировать А 
 
@@ -159,23 +153,13 @@ int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
 				cout<<"memcpy "<<i<<" ended\n";
 				count += size; 
 			}
-			//else
-			//	count++;
+			
 			
 			
 		} 
 		cout<<"end of copying vectors\n";
 		memcpy(res.ind, &row_index[0], (N + 1) * sizeof(int));
-		//посмотрим что он вообще выводит
-		/*for (int t=0;t<res.countOfElems;t++)
-			cout<<res.value[t]<<"|";
-		cout<<endl;
-		for (int t=0;t<res.countOfElems;t++)
-			cout<<res.numberOfRow[t]<<"|";
-		cout<<endl;
-		for (int t=0;t<res.size+1;t++)
-			cout<<res.ind[t]<<"|";
-		cout<<endl<<"+++++++++++++++++++++++++++++\n";*/
+		
 		delete [] row_index;
 		delete [] rows;
 		delete [] values;	
@@ -225,24 +209,14 @@ cout<<"======================================================\n";
 	
 	el_cnt=multiply(A_test,B_test,rslt);
 
-	//запись результата в файл
-	/*cout<<"vals\n";
-	for(int i=0;i<el_cnt;i++)
-		cout<<rslt.value[i]<<" | ";
-	cout<<"rows\n";
-	for(int i=0;i<el_cnt;i++)
-		cout<<rslt.numberOfRow[i]<<" | ";
-	cout<<"inds\n";
-	for(int i=0;i<test_size+1;i++)
-		cout<<rslt.ind[i]<<" | ";*/
+	
 
 
 	cout<<"successfully calculated \n";
 	cout<<"------------------------------\n";
 	cout<<"res_test \n";
 	fl=fopen(file_output,"wb");
-	//fwrite(&el_cnt,sizeof(el_cnt),1,fl);//число ненул эл-тов
-	//fwrite(&test_size,sizeof(test_size),1,fl);//размерность
+	
 	cout<<el_cnt<<" is count of res elems\n";
 	fwrite(rslt.value,sizeof(*rslt.value),el_cnt,fl);
 	fwrite(rslt.numberOfRow,sizeof(*rslt.numberOfRow),el_cnt,fl);
