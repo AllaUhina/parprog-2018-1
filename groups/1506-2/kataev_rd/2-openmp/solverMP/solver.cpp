@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 	int radius = size / 2;
 	float sigma = 0;
 	double sum = 0;
+	int i = 0;
 	string testName, picPathRaw, fileName, picName;
 
 	//получение необходимых путей к директориям
@@ -54,7 +55,13 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < size; i++)
 		gaussCore[i] = new double[size];
 
-	for (int i = -radius; i <= radius; i++)
+	omp_set_num_threads(stoi(argv[2]));
+
+	double t1, t2;
+	t1 = omp_get_wtime();
+
+#pragma omp parallel for private(i) reduction(+: sum)
+	for (i = -radius; i <= radius; i++)
 	{
 		for (int j = -radius; j <= radius; j++)
 		{
@@ -64,7 +71,8 @@ int main(int argc, char *argv[])
 
 	}
 
-	for (int i = 0; i < size; i++)
+#pragma omp parallel for private(i) shared(sum)
+	for (i = 0; i < size; i++)
 	{
 		for (int j = 0; j < size; j++)
 		{
@@ -72,11 +80,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
-	double t1, t2;
-	t1 = omp_get_wtime();
-
-	int i = 0;
 	int height = inFile.rows;
 	int width = inFile.cols;
 
@@ -112,8 +115,6 @@ int main(int argc, char *argv[])
 
 	//запись полученного изображения
 	imwrite(fileName, outFile);
-
-	cout << endl << "DONE WRITING";
 
 	for (int i = 0; i < 3; i++)
 		delete[] gaussCore[i];
