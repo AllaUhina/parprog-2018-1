@@ -31,7 +31,8 @@ void init_CCSmatrix(int sz, int cnt, CCSmatrix &matr)
 	memset(matr.ind,0,sizeof(int)*(sz+1));
 	memset(matr.value,0,sizeof(double)*cnt);
 	memset(matr.numberOfRow,0,sizeof(int)*cnt);
-
+	
+}
 
 // нужно транспонировать А 
 
@@ -71,12 +72,13 @@ CCSmatrix transposeMatrix(CCSmatrix &matr)
 	return res;
 }
 
-int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
+int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res,int thrds)
 {
+	
 	int total_cnt=0;//число элементов
 	if (A.size!=B.size)
 		throw "size error";
-
+	
 	CCSmatrix AT;
 	AT=transposeMatrix(A);
 	
@@ -84,18 +86,19 @@ int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
 	B=transposeMatrix(B);
 
 	int N=A.size;
+	int chunk=20;
 	int i, j, k;
-	cout<<"N is "<<N<<endl;
+	
 	vector<int> *rows = new vector<int>[N];
 	vector<double> *values = new vector<double>[N];
 	int* row_index = new int[N + 1];
 	memset(row_index, 0, sizeof(int) * N);
-	cout<<"start of parallel\n";
-#pragma omp parallel 
+	
+#pragma omp parallel num_threads(thrds)
 	{ 
 		int *temp = new int[N];
-
-#pragma omp for private(i,j,k)
+		
+#pragma omp for private(j,k) schedule(dynamic)
 		for (i = 0; i < N; i++) 
 		{ 
 			memset(temp, -1, N * sizeof(int)); 
@@ -145,36 +148,38 @@ int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
 			int size = rows[i].size();
 			if(size!=0)
 			{
-				cout<<"start of "<<i<<" row memcpy\n";
-				cout<<"count is "<<count<<"size is "<<size<<endl;
+				
 				memcpy(&res.numberOfRow[count], &rows[i][0], size * sizeof(int));
-				cout<<"start of val memcpy\n";
+				
 				memcpy(&res.value[count], &values[i][0], size * sizeof(double));
-				cout<<"memcpy "<<i<<" ended\n";
+				
 				count += size; 
 			}
-			
+		
 			
 			
 		} 
-		cout<<"end of copying vectors\n";
+		
 		memcpy(res.ind, &row_index[0], (N + 1) * sizeof(int));
 		
 		delete [] row_index;
 		delete [] rows;
 		delete [] values;	
 		res=transposeMatrix(res);
+		
 	return NZ;
 }
 int main(int argc, char * argv[])
 {
+	double t1,t2;
 	char *file_name,*file_output;
 	int m_size,not_null_elements_in_one_col,k,Index,el_cnt;
-	int num_threads = 1;
+	int num_thrd = 1;
 	if (argc > 1)
 	{
 		file_name=argv[1];
 		file_output=argv[2];
+		num_thrd=atoi(argv[3]);
 	}
 	else
 	{
@@ -206,13 +211,12 @@ cout<<"======================================================\n";
 	fread(B_test.ind,sizeof(*B_test.ind),test_size+1,fl);
 
 	
-	
-	el_cnt=multiply(A_test,B_test,rslt);
+	t1=omp_get_wtime();
+	el_cnt=multiply(A_test,B_test,rslt,num_thrd);
+	t2=omp_get_wtime();
+	double total_time=t2-t1;
 
-	
-
-
-	cout<<"successfully calculated \n";
+	cout<<"successfully calculated \n"<<"time is "<<total_time<<endl;
 	cout<<"------------------------------\n";
 	cout<<"res_test \n";
 	fl=fopen(file_output,"wb");
