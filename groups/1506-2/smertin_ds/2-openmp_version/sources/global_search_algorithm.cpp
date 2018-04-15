@@ -165,33 +165,38 @@ AnswerGSA methodGSA() {
         if (maxM > 0) {
             m = r * maxM;
         }
+#pragma omp parallel
+        {
+#pragma omp for
+            for (int j = 0; j < num_threads; ++j) {
+                maxCh[j].R = 0;
+                maxCh[j].iter = 1;
+            }
+            Characteristic current_ch;
+#pragma omp for
+            for (int j = 1; j <= i; ++j) {
+                current_ch.R = m * (points[j].x - points[j - 1].x) +
+                               ((points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y))
+                               / (m * (points[j].x - points[j - 1].x)) -
+                               2 * (points[j].y + points[j - 1].y);
+                current_ch.iter = j;
 
-        for (int j = 0; j < num_threads; ++j) {
-            maxCh[j].R = 0;
-            maxCh[j].iter = 1;
-        }
-        Characteristic current_ch;
-        for (int j = 1; j <= i; ++j) {
-            current_ch.R = m * (points[j].x - points[j - 1].x) + ((points[j].y - points[j - 1].y)*(points[j].y - points[j - 1].y))
-                                                      / (m * (points[j].x - points[j - 1].x)) -
-                2 * (points[j].y + points[j - 1].y);
-            current_ch.iter = j;
-
-            if (j == 1) {
-                maxCh[j - 1] = current_ch;
-            } else {
-                int ins_id;
-                for (ins_id = 0; ins_id < num_threads; ++ins_id) {
-                    if (current_ch.R > maxCh[ins_id].R) {
-                        if (ins_id == num_threads - 1) {
-                            maxCh[ins_id] = current_ch;
-                        } else {
-                            for (int move_iter = num_threads - 1; move_iter > ins_id; --move_iter) {
-                                maxCh[move_iter] = maxCh[move_iter - 1];
+                if (j == 1) {
+                    maxCh[j - 1] = current_ch;
+                } else {
+                    int ins_id;
+                    for (ins_id = 0; ins_id < num_threads; ++ins_id) {
+                        if (current_ch.R > maxCh[ins_id].R) {
+                            if (ins_id == num_threads - 1) {
+                                maxCh[ins_id] = current_ch;
+                            } else {
+                                for (int move_iter = num_threads - 1; move_iter > ins_id; --move_iter) {
+                                    maxCh[move_iter] = maxCh[move_iter - 1];
+                                }
+                                maxCh[ins_id] = current_ch;
                             }
-                            maxCh[ins_id] = current_ch;
+                            break;
                         }
-                        break;
                     }
                 }
             }
