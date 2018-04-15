@@ -116,8 +116,8 @@ using namespace std;
 			if (num == 5)
 			{
 				function = "(x+2*y-7)^2+(2*x+y-5)^2";
-				left_border = -100;
-				right_border = 100;
+				left_border = -1000;
+				right_border = 1000;
 				ofstream test_stream("tests/test_05.tst", ios::out | ios::binary);
 				if (test_stream) {
 					test_stream << function << endl;
@@ -132,8 +132,8 @@ using namespace std;
 			if (num == 6)
 			{
 				function = "six(x+y)+(x-y)^2-1.5*x+2.5*y+1";
-				left_border = -100;
-				right_border = 100;
+				left_border = -1000;
+				right_border = 1000;
 				ofstream test_stream2("tests/test_06.tst", ios::out | ios::binary);
 				if (test_stream2) {
 					test_stream2 << function << endl;
@@ -147,8 +147,8 @@ using namespace std;
 			if (num == 7)
 			{
 				function = "100*(y-x^2)^2+(1-x^2)";
-				left_border = -100;
-				right_border = 100;
+				left_border = -1000;
+				right_border = 1000;
 				ofstream test_stream2("tests/test_07.tst", ios::out | ios::binary);
 				if (test_stream2) {
 					test_stream2 << function << endl;
@@ -162,8 +162,8 @@ using namespace std;
 			if (num == 8)
 			{
 				function = "100*(y-x^3)^2-(1-x)^2";
-				left_border = -100;
-				right_border = 100;
+				left_border = -1000;
+				right_border = 1000;
 				ofstream test_stream2("tests/test_08.tst", ios::out | ios::binary);
 				if (test_stream2) {
 					test_stream2 << function << endl;
@@ -177,8 +177,8 @@ using namespace std;
 			if (num == 9)
 			{
 				function = "2*x^2-1.05*x^4+(x^6)/6+x*y+y^2";
-				left_border = -100;
-				right_border = 100;
+				left_border = -1000;
+				right_border = 1000;
 				ofstream test_stream2("tests/test_09.tst", ios::out | ios::binary);
 				if (test_stream2) {
 					test_stream2 << function << endl;
