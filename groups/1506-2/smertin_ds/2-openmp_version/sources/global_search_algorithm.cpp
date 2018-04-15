@@ -24,6 +24,13 @@ struct AnswerGSA {
     double minY;
 } answer;
 
+struct ReportGSA
+{
+    double d_time;
+    int num_iter;
+    int num_threads;
+} report;
+
 ToFunction toFunc;
 
 double f(double);
@@ -55,8 +62,11 @@ int main(int argc, char *argv[]) {
 //=============================================================================
 
     char path_of_answer[] = "../bin/results/result_00";
+    char path_of_report[] = "../bin/reports/report_00";
+
     int path_task_length = sizeof(path_of_answer) / sizeof(char);
     int path_answ_length = sizeof(path_of_answer) / sizeof(char);
+    int path_rep_length = sizeof(path_of_report) / sizeof(char);
 
     int ind_task;
     for (int ind = 0; ind < path_task_length; ++ind) {
@@ -74,8 +84,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    path_of_answer[ind_answ] = path_of_test[ind_task];
-    path_of_answer[ind_answ + 1] = path_of_test[ind_task + 1];
+    int ind_rep;
+    for (int ind = 0; ind < path_rep_length; ++ind) {
+        if (path_of_report[ind] == '_') {
+            ind_rep = ind + 1;
+            break;
+        }
+    }
+
+    path_of_report[ind_rep] = path_of_answer[ind_answ] = path_of_test[ind_task];
+    path_of_report[ind_rep + 1] = path_of_answer[ind_answ + 1] = path_of_test[ind_task + 1];
 
     std::ofstream answer_stream(path_of_answer, std::ios::out | std::ios::binary);
     if (!answer_stream) {
@@ -86,6 +104,17 @@ int main(int argc, char *argv[]) {
     answer_stream << answer.minY << std::endl;
 
     answer_stream.close();
+
+    std::ofstream report_stream(path_of_report, std::ios::out | std::ios::binary);
+    if (!answer_stream) {
+        std::cout << "open " << path_of_report << " error" << std::endl;
+        return 1;
+    }
+    report_stream << report.num_threads << std::endl;
+    report_stream << report.d_time << std::endl;
+    report_stream << report.num_iter << std::endl;
+
+    report_stream.close();
 
     return 0;
 }
@@ -225,9 +254,8 @@ AnswerGSA methodGSA() {
 
     auto finish_time = omp_get_wtime();
 
-    std::cout << "\n\tReport:" << std::endl;
-    std::cout << "Number of iterations: "<< num_iter << std::endl;
-    std::cout << "Time of working: "<< finish_time - start_time << "\n" << std::endl;
+    report.d_time = finish_time - start_time;
+    report.num_iter = num_iter;
 
     answer.minX = minPoint.x;
     answer.minY = minPoint.y;
