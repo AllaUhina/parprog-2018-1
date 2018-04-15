@@ -125,8 +125,15 @@ double f(double x) {
 
 AnswerGSA methodGSA() {
     if (task.function.find('x') == std::string::npos) {
+        auto start_time = omp_get_wtime();
         answer.minX = task.left_border;
         answer.minY = f(task.left_border);
+
+        auto finish_time = omp_get_wtime();
+
+        report.d_time = finish_time - start_time;
+        report.num_iter = 0;
+
         return answer;
     }
     const double a = task.left_border;
@@ -156,6 +163,8 @@ AnswerGSA methodGSA() {
 
     auto num_threads = omp_get_max_threads();
     omp_set_num_threads(num_threads);
+
+    report.num_threads = num_threads;
 
     std::vector<Point> points(k);
     std::vector<Characteristic> maxCh(num_threads);
