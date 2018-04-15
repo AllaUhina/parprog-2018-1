@@ -18,7 +18,7 @@ int main (int argc, char* argv[])
         TaskGSA task;
         task.function = "x^2";
         task.left_border = -30;
-        task.right_border = 30;
+        task.right_border = 31;
 
         task.num_iter = 1000000;
         task.eps = 0.0001;

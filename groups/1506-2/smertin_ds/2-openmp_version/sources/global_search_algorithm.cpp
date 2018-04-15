@@ -28,10 +28,10 @@ ToFunction toFunc;
 
 double f(double);
 
-void methodGSA();
+AnswerGSA methodGSA();
 
 int main(int argc, char *argv[]) {
-    const char *path_of_test = "../bin/tasks/task_03";
+    const char *path_of_test = "../bin/tasks/task_09";
 
     if (argc > 1) {
         path_of_test = argv[1];
@@ -94,7 +94,12 @@ double f(double x) {
     toFunc.Calculate(x);
 }
 
-void methodGSA() {
+AnswerGSA methodGSA() {
+    if (task.function.find('x') == std::string::npos) {
+        answer.minX = task.left_border;
+        answer.minY = f(task.left_border);
+        return answer;
+    }
     const double a = task.left_border;
     const double b = task.right_border;
     double eps = task.eps;
@@ -104,7 +109,6 @@ void methodGSA() {
     double m = 1;
     double maxM = 0;
     double M;
-    double R;
 
     struct Point {
         double x;
@@ -126,8 +130,6 @@ void methodGSA() {
 
     std::vector<Point> points(k);
     std::vector<Characteristic> maxCh(num_threads);
-
-    Point left_point, right_point;
 
     auto start_time = omp_get_wtime();
 
@@ -168,26 +170,34 @@ void methodGSA() {
             maxCh[j].R = 0;
             maxCh[j].iter = 1;
         }
+        Characteristic current_ch;
         for (int j = 1; j <= i; ++j) {
-            R = m * (points[j].x - points[j - 1].x) + ((points[j].y - points[j - 1].y)*(points[j].y - points[j - 1].y))
+            current_ch.R = m * (points[j].x - points[j - 1].x) + ((points[j].y - points[j - 1].y)*(points[j].y - points[j - 1].y))
                                                       / (m * (points[j].x - points[j - 1].x)) -
                 2 * (points[j].y + points[j - 1].y);
+            current_ch.iter = j;
 
-            for (int id = 0; id < num_threads; ++id) {
-                if (R > maxCh[id].R) {
-                    maxCh[id].R = R;
-                    maxCh[id].iter = j;
-                    break;
+            if (j == 1) {
+                maxCh[j - 1] = current_ch;
+            } else {
+                int ins_id;
+                for (ins_id = 0; ins_id < num_threads; ++ins_id) {
+                    if (current_ch.R > maxCh[ins_id].R) {
+                        if (ins_id == num_threads - 1) {
+                            maxCh[ins_id] = current_ch;
+                        } else {
+                            for (int move_iter = num_threads - 1; move_iter > ins_id; --move_iter) {
+                                maxCh[move_iter] = maxCh[move_iter - 1];
+                            }
+                            maxCh[ins_id] = current_ch;
+                        }
+                        break;
+                    }
                 }
             }
-            std::sort(maxCh.begin(), maxCh.end(),
-                      [](const Characteristic &a, const Characteristic &b) {
-                          return a.R < b.R;
-                      }
-            );
         }
 
-        if (fabs(points[maxCh[num_threads - 1].iter].x - points[maxCh[num_threads - 1].iter - 1].x) < eps) {
+        if (fabs(points[maxCh[0].iter].x - points[maxCh[0].iter - 1].x) < eps) {
             break;
         }
 
@@ -216,4 +226,5 @@ void methodGSA() {
 
     answer.minX = minPoint.x;
     answer.minY = minPoint.y;
+    return answer;
 }
