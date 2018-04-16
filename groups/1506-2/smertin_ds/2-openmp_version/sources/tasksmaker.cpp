@@ -18,12 +18,12 @@ int main (int argc, char* argv[])
         TaskGSA task;
         task.function = "x^2";
         task.left_border = -30;
-        task.right_border = 30;
+        task.right_border = 31;
 
         task.num_iter = 1000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_00.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_00", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -44,7 +44,7 @@ int main (int argc, char* argv[])
         task.num_iter = 1000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_01.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_01", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -65,7 +65,7 @@ int main (int argc, char* argv[])
         task.num_iter = 1000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_02.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_02", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -86,7 +86,7 @@ int main (int argc, char* argv[])
         task.num_iter = 1000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_03.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_03", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -107,7 +107,7 @@ int main (int argc, char* argv[])
         task.num_iter = 1000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_04.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_04", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -128,7 +128,7 @@ int main (int argc, char* argv[])
         task.num_iter = 10000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_05.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_05", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -150,7 +150,7 @@ int main (int argc, char* argv[])
         task.num_iter = 10000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_06.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_06", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -172,7 +172,7 @@ int main (int argc, char* argv[])
         task.num_iter = 1000000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_07.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_07", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -194,7 +194,7 @@ int main (int argc, char* argv[])
         task.num_iter = 10000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_08.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_08", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;
@@ -216,7 +216,7 @@ int main (int argc, char* argv[])
         task.num_iter = 100000;
         task.eps = 0.0001;
 
-        std::ofstream task_stream("../tasks/task_09.task", std::ios::out | std::ios::binary);
+        std::ofstream task_stream("../bin/tasks/task_09", std::ios::out | std::ios::binary);
 
         task_stream << task.function << std::endl;
         task_stream << task.left_border << std::endl;

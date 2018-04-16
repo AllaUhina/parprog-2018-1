@@ -1,7 +1,7 @@
 #include <fstream>
 #include <string>
 
-#include "../tofunction/tofunction.h"
+#include "./tofunction/tofunction.h"
 
 #define PI 3.141592653589
 
@@ -22,7 +22,7 @@ int main (int argc, char* argv[])
         answer.minX = 0;
         answer.minY = 0;
 
-        std::ofstream answer_stream("../answers/answer_00.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_00", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -35,7 +35,7 @@ int main (int argc, char* argv[])
         answer.minX = 3 * PI / 2;
         answer.minY = -1;
 
-        std::ofstream answer_stream("../answers/answer_01.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_01", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -50,7 +50,7 @@ int main (int argc, char* argv[])
         /*answer.minX = 9 * PI;
         answer.minY = -7.06858347057703478;*/
 
-        std::ofstream answer_stream("../answers/answer_02.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_02", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -64,7 +64,7 @@ int main (int argc, char* argv[])
         /* answer.minX = 28.27; // need a full search
         answer.minY = -12.88; */
 
-        std::ofstream answer_stream("../answers/answer_03.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_03", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -78,7 +78,7 @@ int main (int argc, char* argv[])
         /* answer.minX = 17.88; // need a full search
         answer.minY = -19892; */
 
-        std::ofstream answer_stream("../answers/answer_04.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_04", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -92,7 +92,7 @@ int main (int argc, char* argv[])
         /* answer.minX = 895.3; // need a full search
         answer.minY = -98.5; */
 
-        std::ofstream answer_stream("../answers/answer_05.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_05", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -106,7 +106,7 @@ int main (int argc, char* argv[])
         /* answer.minX = 939; // need a full search
         answer.minY = -19892; */
 
-        std::ofstream answer_stream("../answers/answer_06.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_06", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -120,7 +120,7 @@ int main (int argc, char* argv[])
         /* answer.minX = 910.7; // need a full search
         answer.minY = -19892; */
 
-        std::ofstream answer_stream("../answers/answer_07.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_07", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -134,7 +134,7 @@ int main (int argc, char* argv[])
         answer.minX = 936;
         answer.minY = -1;
 
-        std::ofstream answer_stream("../answers/answer_08.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_08", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
@@ -147,7 +147,7 @@ int main (int argc, char* argv[])
         answer.minX = 4;
         answer.minY = 4;
 
-        std::ofstream answer_stream("../answers/answer_09.answ", std::ios::out | std::ios::binary);
+        std::ofstream answer_stream("../bin/answers/answer_09", std::ios::out | std::ios::binary);
 
         answer_stream << answer.minX << std::endl;
         answer_stream << answer.minY << std::endl;
