@@ -2,7 +2,7 @@
 
 //======== !!!!!!!!!!!!! СТОЛБЦОВЫЙ  !!!!!!!!!!!!! =====================
 
-
+#include <omp.h>
 #include <vector>
 #include <iostream>
 using namespace std;
@@ -27,13 +27,11 @@ void init_CCSmatrix(int sz, int cnt, CCSmatrix &matr)
 	matr.value=new double[cnt];
 	matr.numberOfRow=new int[cnt];
 	matr.ind=new int[sz+1];
-	for (int i=0;i<sz+1;i++)
-		matr.ind[i]=0;
-	for (int i=0;i<cnt;i++)
-	{
-		matr.value[i]=0;
-		matr.numberOfRow[i]=0;
-	}
+	
+	memset(matr.ind,0,sizeof(int)*(sz+1));
+	memset(matr.value,0,sizeof(double)*cnt);
+	memset(matr.numberOfRow,0,sizeof(int)*cnt);
+	
 }
 
 // нужно транспонировать А 
@@ -74,74 +72,121 @@ CCSmatrix transposeMatrix(CCSmatrix &matr)
 	return res;
 }
 
-int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res)
+int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res,int thrds)
 {
-	int total_cnt=0;
+	
+	int total_cnt=0;//число элементов
 	if (A.size!=B.size)
 		throw "size error";
-
+	
 	CCSmatrix AT;
 	AT=transposeMatrix(A);
-
-	vector<int>cols;
-	vector<double> vals;
-	vector<int>inds;
-
-	inds.push_back(0);
-
-	int tmpInd;
 	
-	for (int i=0;i<AT.size;i++)
-	{		
-		tmpInd=0;
-		for (int j=0;j<AT.size;j++)
-		{
-			double sum=0;
-			//---------------
-			for (int k=AT.ind[i];k<AT.ind[i+1];k++)
-			{
-				for (int l=B.ind[j];l<B.ind[j+1];l++)
-					if(AT.numberOfRow[k]==B.numberOfRow[l])
-					{
-						sum+=AT.value[k]*B.value[l];
-						break;
-					}
-			}
-			//--------------
+	B=transposeMatrix(B);
+	B=transposeMatrix(B);
 
-			if (abs(sum)>0)
-			{
-				total_cnt++;
-				cols.push_back(j);
-				vals.push_back(sum);
-				tmpInd++;
-			}
-		}
-		inds.push_back(tmpInd+inds[i]);
-	}
-	init_CCSmatrix(AT.size,cols.size(),res);
-	for (int i=0;i<cols.size();i++)
-	{
-		res.numberOfRow[i]=cols[i];
-		res.value[i]=vals[i];
-	}
+	int N=A.size;
+	int chunk=20;
+	int i, j, k;
 	
-	for (int i=0;i<inds.size();i++)
-		res.ind[i]=inds[i];
-	res=transposeMatrix(res);
-	return total_cnt;
+	vector<int> *rows = new vector<int>[N];
+	vector<double> *values = new vector<double>[N];
+	int* row_index = new int[N + 1];
+	memset(row_index, 0, sizeof(int) * N);
+	
+#pragma omp parallel num_threads(thrds)
+	{ 
+		int *temp = new int[N];
+		
+#pragma omp for private(j,k) schedule(dynamic)
+		for (i = 0; i < N; i++) 
+		{ 
+			memset(temp, -1, N * sizeof(int)); 
+			int ind1 = AT.ind[i], ind2 = AT.ind[i + 1]; 
+			for (j = ind1; j < ind2; j++)
+			{
+				int col = AT.numberOfRow[j];
+				temp[col] = j; 
+			} 
+			for (j = 0; j < N; j++) 
+			{ 
+				double sum = 0;
+				int ind3 = B.ind[j], ind4 = B.ind[j + 1];
+				for (k = ind3; k < ind4; k++) 
+				{ 
+					int bcol = B.numberOfRow[k];
+					int aind = temp[bcol];
+					if (aind != -1)
+						sum += AT.value[aind] * B.value[k]; 
+				}
+
+				if (fabs(sum) > 0) 
+				{ 
+					rows[i].push_back(j); 
+					values[i].push_back(sum); 
+					row_index[i]++;
+				} 
+			} 
+		} 
+		delete [] temp;
+	}
+	cout<<"parallel is nice\n";
+		int NZ = 0;
+		for(i = 0; i < N; i++) 
+		{ 
+			int tmp = row_index[i];
+			row_index[i] = NZ;
+			NZ += tmp; 
+		} 
+		row_index[N] = NZ;
+		init_CCSmatrix(N,NZ,res);
+		cout<<"res is inited\n";
+		int count = 0;
+		cout<<"start of copying vectors\n";
+		for (i = 0; i < N; i++) //тут и начинается лажа. Это точно
+		{ 
+			int size = rows[i].size();
+			if(size!=0)
+			{
+				
+				memcpy(&res.numberOfRow[count], &rows[i][0], size * sizeof(int));
+				
+				memcpy(&res.value[count], &values[i][0], size * sizeof(double));
+				
+				count += size; 
+			}
+		
+			
+			
+		} 
+		
+		memcpy(res.ind, &row_index[0], (N + 1) * sizeof(int));
+		
+		delete [] row_index;
+		delete [] rows;
+		delete [] values;	
+		res=transposeMatrix(res);
+		
+	return NZ;
 }
-
 int main(int argc, char * argv[])
 {
+	double t1,t2;
 	char *file_name,*file_output;
 	int m_size,not_null_elements_in_one_col,k,Index,el_cnt;
-	int num_threads = 1;
+	int num_thrd = 1;
 	if (argc > 1)
 	{
 		file_name=argv[1];
 		file_output=argv[2];
+		num_thrd=atoi(argv[3]);
 	}
+	else
+	{
+		file_name="1";
+		file_output="1tst.ans";
+	}
+
 cout<<"======================================================\n";
 	FILE *fl=fopen(file_name,"rb");
 	int test_size,test_count,buf_Row,buf_Ind;
@@ -164,27 +209,18 @@ cout<<"======================================================\n";
 	fread(B_test.value,sizeof(*B_test.value),test_size*test_count,fl);
 	fread(B_test.numberOfRow,sizeof(*B_test.numberOfRow),test_size*test_count,fl);
 	fread(B_test.ind,sizeof(*B_test.ind),test_size+1,fl);
-	
-	
 
-	el_cnt=multiply(A_test,B_test,rslt);
 	
-	//запись результата в файл
-	/*cout<<"vals\n";
-	for(int i=0;i<el_cnt;i++)
-		cout<<rslt.value[i]<<" | ";
-	cout<<"rows\n";
-	for(int i=0;i<el_cnt;i++)
-		cout<<rslt.numberOfRow[i]<<" | ";
-	cout<<"inds\n";
-	for(int i=0;i<test_size+1;i++)
-		cout<<rslt.ind[i]<<" | ";*/
-	cout<<"successfully calculated \n";
+	t1=omp_get_wtime();
+	el_cnt=multiply(A_test,B_test,rslt,num_thrd);
+	t2=omp_get_wtime();
+	double total_time=t2-t1;
+
+	cout<<"successfully calculated \n"<<"time is "<<total_time<<endl;
 	cout<<"------------------------------\n";
 	cout<<"res_test \n";
 	fl=fopen(file_output,"wb");
-	fwrite(&el_cnt,sizeof(el_cnt),1,fl);//число ненул эл-тов
-	fwrite(&test_size,sizeof(test_size),1,fl);//размерность
+	
 	cout<<el_cnt<<" is count of res elems\n";
 	fwrite(rslt.value,sizeof(*rslt.value),el_cnt,fl);
 	fwrite(rslt.numberOfRow,sizeof(*rslt.numberOfRow),el_cnt,fl);
