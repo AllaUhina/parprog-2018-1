@@ -6,7 +6,8 @@
 #include <iterator>
 #include <algorithm>
 
-#include <omp.h>
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
 
 #include "./tofunction/tofunction.h"
 

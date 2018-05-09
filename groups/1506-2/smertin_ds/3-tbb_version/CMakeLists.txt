@@ -1,15 +1,14 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(GSA_OpenMP)
+project(GSA_TBB)
 
 set(CMAKE_CXX_STANDARD 11)
 
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
+
+include(${TBB_ROOT}/cmake/TBBBuild.cmake)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS tbb_cpf=1)
+
+find_package(TBB REQUIRED tbb_preview)
 
 set(GSA_EXE ./sources/global_search_algorithm.cpp)
 
@@ -32,4 +31,4 @@ add_executable(checker ${CHECKER_EXE})
 add_executable(gsa ${GSA_EXE})
 
 target_link_libraries(answersmaker tofunction)
-target_link_libraries(gsa tofunction)
+target_link_libraries(gsa tofunction ${TBB_IMPORTED_TARGETS})
