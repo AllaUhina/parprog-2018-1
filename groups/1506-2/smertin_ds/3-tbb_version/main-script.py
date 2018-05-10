@@ -3,9 +3,6 @@ import sys
 import os
 
 os.chdir('./build/')
-
-print("building is doing...")
-code = pr.call(["cmake", "-DTBB_ROOT=${HOME}/Documents/git/parprog-2018-1/groups/1506-2/smertin_ds/3-tbb_version/tbb", "../"])
 code = pr.call("make")
 if code != 0:
     print("building fail")

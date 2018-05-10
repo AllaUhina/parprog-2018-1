@@ -2,12 +2,18 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <utility>
 #include <vector>
 #include <iterator>
 #include <algorithm>
 
+#include "tbb/task_scheduler_init.h"
+#include "tbb/tick_count.h"
+#include "tbb/parallel_sort.h"
+#include "tbb/parallel_reduce.h"
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
+#include "tbb/concurrent_priority_queue.h"
 
 #include "./tofunction/tofunction.h"
 
@@ -125,18 +131,20 @@ double f(double x) {
 }
 
 AnswerGSA methodGSA() {
+
     if (task.function.find('x') == std::string::npos) {
-        auto start_time = omp_get_wtime();
+        auto start_time = tbb::tick_count::now();
         answer.minX = task.left_border;
         answer.minY = f(task.left_border);
 
-        auto finish_time = omp_get_wtime();
+        auto finish_time = tbb::tick_count::now();
 
-        report.d_time = finish_time - start_time;
+        report.d_time = (finish_time - start_time).seconds();
         report.num_iter = 0;
 
         return answer;
     }
+
     const double a = task.left_border;
     const double b = task.right_border;
     double eps = task.eps;
@@ -156,21 +164,26 @@ AnswerGSA methodGSA() {
             this->y = p.y;
             return *this;
         }
+				
     };
     struct Characteristic {
         double R;
         int iter;
+				bool operator<(const Characteristic& ch) const {
+					return (R < ch.R);
+				}
     };
 
-    auto num_threads = omp_get_max_threads();
-    omp_set_num_threads(num_threads);
-
+	tbb::task_scheduler_init init(tbb::task_scheduler_init::deferred);
+    int num_threads = tbb::task_scheduler_init::default_num_threads();
+    init.initialize(num_threads);
     report.num_threads = num_threads;
 
     std::vector<Point> points(k);
-    std::vector<Characteristic> maxCh(num_threads);
+    tbb::concurrent_priority_queue<Characteristic> q_maxCh(num_threads);
+	std::vector<Characteristic> maxCh(num_threads);
 
-    auto start_time = omp_get_wtime();
+    auto start_time = tbb::tick_count::now();
 
     points[0].x = a;
     points[num_threads].x = b;
@@ -191,80 +204,107 @@ AnswerGSA methodGSA() {
     int num_iter = 0;
     for (int i = num_threads; i < k - 1 - num_threads; i += num_threads) {
 
-        std::sort(points.begin(), points.begin() + i, [](const Point &a, const Point &b) {
+        tbb::parallel_sort(points.begin(), points.begin() + i, [](const Point &a, const Point &b) {
             return a.x < b.x;
         });
 
-#pragma omp parallel for private(M) reduction(max : maxM)
-        for (int j = 1; j <= i; ++j) {
-            M = (fabs(points[j].y - points[j - 1].y)) / (points[j].x - points[j - 1].x);
-            maxM = (M > maxM) ? M : maxM;
-        }
+	class computing_M
+	{
+		const std::vector<Point> p_vec;
+		double max_M;
+	public:
+		explicit computing_M(std::vector<Point> pv, double m): p_vec(pv), max_M(m)
+		{	}
+		computing_M(const computing_M& cm, tbb::split): p_vec(cm.p_vec), max_M(cm.max_M)
+		{	}
+		void operator()(const tbb::blocked_range<int> &r) {
+			int begin = r.begin(), end = r.end();
+			for (int j = begin; j <= end; ++j) {
+    auto M = (fabs(p_vec[j].y - p_vec[j - 1].y)) / (p_vec[j].x - p_vec[j - 1].x);
+    max_M = (M > max_M) ? M : max_M;
+			}
+		}
+		void join(const computing_M& cm) {
+			max_M = (cm.max_M > max_M) ? cm.max_M : max_M;
+		}
+		double Result() {
+			return max_M;
+		}
+	} maxM_comput(points, maxM);
+	tbb::parallel_reduce(tbb::blocked_range<int>(1, i, num_threads - 1), maxM_comput);
+	maxM = maxM_comput.Result();
 
         if (maxM > 0) {
             m = r * maxM;
         }
-#pragma omp parallel
-        {
-#pragma omp for
-            for (int j = 0; j < num_threads; ++j) {
-                maxCh[j].R = 0;
-                maxCh[j].iter = 1;
-            }
-            Characteristic current_ch;
-#pragma omp for
-            for (int j = 1; j <= i; ++j) {
-                current_ch.R = m * (points[j].x - points[j - 1].x) +
-                               ((points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y))
-                               / (m * (points[j].x - points[j - 1].x)) -
-                               2 * (points[j].y + points[j - 1].y);
-                current_ch.iter = j;
 
-                if (j == 1) {
-                    maxCh[j - 1] = current_ch;
-                } else {
-                    int ins_id;
-                    for (ins_id = 0; ins_id < num_threads; ++ins_id) {
-                        if (current_ch.R > maxCh[ins_id].R) {
-                            if (ins_id == num_threads - 1) {
-                                maxCh[ins_id] = current_ch;
-                            } else {
-                                for (int move_iter = num_threads - 1; move_iter > ins_id; --move_iter) {
-                                    maxCh[move_iter] = maxCh[move_iter - 1];
-                                }
-                                maxCh[ins_id] = current_ch;
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+		q_maxCh.clear();
+		tbb::parallel_for(tbb::blocked_range<int>(1, i, num_threads - 1),
+			[&](const tbb::blocked_range<int>& r) {
+				int begin = r.begin(), end = r.end();
+				Characteristic current_ch;
+				for (int j = begin; j <= end; ++j) {
+					current_ch.R = m * (points[j].x - points[j - 1].x) +
+												((points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y))
+												/ (m * (points[j].x - points[j - 1].x)) -
+												2 * (points[j].y + points[j - 1].y);
+					current_ch.iter = j;
+					q_maxCh.push(current_ch);
+				}
+			});
 
+		for (int j = num_threads - 1; j >= 0; --j) {
+			q_maxCh.try_pop(maxCh[j]);
+		}
         if (fabs(points[maxCh[0].iter].x - points[maxCh[0].iter - 1].x) < eps) {
             break;
         }
 
-#pragma omp parallel
-        {
-            auto current_thread = omp_get_thread_num();
-            Point newPoint;
-            newPoint.x = 0.5 * (points[maxCh[current_thread].iter].x + points[maxCh[current_thread].iter - 1].x)
-                         - 0.5 * (points[maxCh[current_thread].iter].y - points[maxCh[current_thread].iter - 1].y) / m;
-            newPoint.y = f(newPoint.x);
-            points[i + 1 + current_thread] = newPoint;
 
-#pragma omp critical
-            {
-                minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
-            }
-        }
+		class computing_minPoint
+		{
+			std::vector<Point> p_vec;
+			const std::vector<Characteristic> chvec;
+			const int i;
+            const double m;
+			Point min_point;
+		public:
+			explicit computing_minPoint(std::vector<Point> pv, std::vector<Characteristic> chv, Point minP, int iter, double _m):
+			p_vec(pv), chvec(chv), min_point(minP), i(iter), m(_m) {	}
+			computing_minPoint(const computing_minPoint& cm, tbb::split):
+			p_vec(cm.p_vec), chvec(cm.chvec), min_point(cm.min_point), i(cm.i), m(cm.m) {	}
+			void operator()(const tbb::blocked_range<int> &r) {
+				int begin = r.begin(), end = r.end();
+				for (int current_thread = begin; current_thread <= end; ++current_thread) {
+					Point newPoint;
+                    newPoint.x = 0.5 * (p_vec[chvec[current_thread].iter].x + p_vec[chvec[current_thread].iter - 1].x)
+                                 - 0.5 * (p_vec[chvec[current_thread].iter].y - p_vec[chvec[current_thread].iter - 1].y) / m;
+                    newPoint.y = f(newPoint.x);
+                    p_vec[i + 1 + current_thread] = newPoint;
+					min_point = (newPoint.y < min_point.y) ? newPoint : min_point;
+				}
+			}
+			void join(const computing_minPoint& cm) {
+				min_point = (cm.min_point.y < min_point.y) ? cm.min_point : min_point;
+			}
+			std::pair<Point, std::vector<Point>> Result() {
+				std::pair<Point, std::vector<Point>> res;
+                res.first = min_point; res.second = p_vec;
+                return res;
+			}
+		} minP_comput(points, maxCh, minPoint, i, m);
+        
+		tbb::parallel_reduce(tbb::blocked_range<int>(0, num_threads, num_threads - 1), minP_comput);
+		std::pair<Point, std::vector<Point>> res = minP_comput.Result();
+		minPoint = res.first;
+		points = res.second;
+
         ++num_iter;
     }
 
-    auto finish_time = omp_get_wtime();
+    auto finish_time = tbb::tick_count::now();
 
-    report.d_time = finish_time - start_time;
+    report.d_time = (finish_time - start_time).seconds();
     report.num_iter = num_iter;
 
     answer.minX = minPoint.x;
