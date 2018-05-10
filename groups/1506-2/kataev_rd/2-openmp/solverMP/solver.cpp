@@ -11,7 +11,6 @@
 using namespace cv;
 using namespace std;
 
-//функция для проверки невыхода за определенные границы (наиболее актуальна для значений пикселей)
 int control(int in, int a, int b)
 {
 	if (in < a)
@@ -31,13 +30,11 @@ int main(int argc, char *argv[])
 	int i = 0;
 	string testName, picPathRaw, fileName, picName;
 
-	//получение необходимых путей к директориям
 	string outputPathCustom = "../../CustomResults/";
 	picPathRaw = "../../SourceImgs/";
 	string tstStr = string(argv[1]);
 	testName = "../../Tests/" + tstStr;
 
-	//чтение из файла задания
 	ifstream testFile;
 	testFile.open(testName, ios::in | ios::binary);
 	testFile >> picName;
@@ -45,22 +42,19 @@ int main(int argc, char *argv[])
 
 	fileName = outputPathCustom + picName;
 
-	//загрузка изображений
 	Mat inFile;
 	inFile = imread(picPathRaw + picName, CV_LOAD_IMAGE_COLOR);
 	Mat outFile(inFile.size(), CV_8UC3);
 
-	//создание, заполнение и нормировка ядра фильтра
 	double **gaussCore = new double*[size];
 	for (int i = 0; i < size; i++)
-		gaussCore[i] = new double[size];
-
+		gaussCore[i] = gaussCore[0] + i*n;
+	
 	omp_set_num_threads(stoi(argv[2]));
 
 	double t1, t2;
 	t1 = omp_get_wtime();
 
-#pragma omp parallel for private(i) reduction(+: sum)
 	for (i = -radius; i <= radius; i++)
 	{
 		for (int j = -radius; j <= radius; j++)
@@ -71,7 +65,6 @@ int main(int argc, char *argv[])
 
 	}
 
-#pragma omp parallel for private(i) shared(sum)
 	for (i = 0; i < size; i++)
 	{
 		for (int j = 0; j < size; j++)
@@ -83,7 +76,6 @@ int main(int argc, char *argv[])
 	int height = inFile.rows;
 	int width = inFile.cols;
 
-	//применение фильтра
 #pragma omp parallel for private(i) shared(inFile, outFile)
 	for (i = 0; i < height; i++)
 	{
@@ -113,7 +105,6 @@ int main(int argc, char *argv[])
 	t2 = omp_get_wtime();
 	cout << t2 - t1;
 
-	//запись полученного изображения
 	imwrite(fileName, outFile);
 
 	for (int i = 0; i < 3; i++)
