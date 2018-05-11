@@ -3,6 +3,8 @@ import sys
 import os
 
 os.chdir('./build/')
+print("building is doing...")
+code = pr.call(["cmake", ".."])
 code = pr.call("make")
 if code != 0:
     print("building fail")

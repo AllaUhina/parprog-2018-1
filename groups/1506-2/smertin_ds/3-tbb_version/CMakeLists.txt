@@ -3,12 +3,9 @@ cmake_minimum_required(VERSION 3.1)
 project(GSA_TBB)
 
 set(CMAKE_CXX_STANDARD 11)
+#add_definitions(-std=c++11)
 
-add_definitions(-std=c++11)
-
-include(${TBB_ROOT}/cmake/TBBBuild.cmake)
-tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS tbb_cpf=1)
-
+set (TBB_DIR /opt/tbb/cmake)
 find_package(TBB REQUIRED tbb_preview)
 
 set(GSA_EXE ./sources/global_search_algorithm.cpp)
