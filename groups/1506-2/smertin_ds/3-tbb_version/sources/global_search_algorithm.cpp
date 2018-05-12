@@ -144,10 +144,10 @@ AnswerGSA methodGSA() {
         return answer;
     }
 
-    std::ofstream log_stream("../log-files/tbb-log", std::ios::out);
+    /* std::ofstream log_stream("../log-files/tbb-log", std::ios::out);
     if (!log_stream) {
         std::cout << "open " << "../log-files/tbb-log" << " error" << std::endl;
-    }
+    } */
 
     const double a = task.left_border;
     const double b = task.right_border;
@@ -207,7 +207,7 @@ AnswerGSA methodGSA() {
             return a.x < b.x;
         });
 
-        log_stream << "iter: " << num_iter << std::endl;
+/*         log_stream << "iter: " << num_iter << std::endl; */
 
         class maxM_comput {
             std::vector<Point> &points;
@@ -233,7 +233,7 @@ AnswerGSA methodGSA() {
         tbb::parallel_reduce(tbb::blocked_range<int>(1, i + 1), mc);
         maxM = mc.maxM;
 
-        log_stream << "\tmaxM: " << maxM << std::endl;
+        /* log_stream << "\tmaxM: " << maxM << std::endl; */
 
         if (maxM > 0) {
             m = r * maxM;
@@ -285,9 +285,9 @@ AnswerGSA methodGSA() {
         } mchc(points, m, maxCh, num_threads);
         tbb::parallel_for(tbb::blocked_range<int>(1, i + 1), mchc);
 
-        for (int j = 0; j < num_threads; ++j) {
+        /* for (int j = 0; j < num_threads; ++j) {
             log_stream << "\tmaxCh: " << maxCh[j].iter << ", " << maxCh[j].R << std::endl;
-        }
+        } */
 
         if (fabs(points[maxCh[0].iter].x - points[maxCh[0].iter - 1].x) < eps) {
             break;
@@ -327,15 +327,16 @@ AnswerGSA methodGSA() {
         tbb::parallel_reduce(tbb::blocked_range<int>(0, num_threads), mpc);
         minPoint = mpc.minPoint;
 
-        for (int current_thread = 0; current_thread < num_threads; ++ current_thread)
+        /* for (int current_thread = 0; current_thread < num_threads; ++ current_thread)
             log_stream << "\tpoints: " << points[i + 1 + current_thread].x << ", " << points[i + 1 + current_thread].y << std::endl;
 
-        log_stream << "\n\t  minPoint: " << minPoint.x << ", " << minPoint.y << std::endl;
+        log_stream << "\n\t  minPoint: " << minPoint.x << ", " << minPoint.y << std::endl; */
+        
         ++num_iter;
     }
 
     auto finish_time = tbb::tick_count::now();
-    log_stream.close();
+    /* log_stream.close(); */
     report.d_time = (finish_time - start_time).seconds();
     report.num_iter = num_iter;
 

@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.1)
 project(GSA_TBB)
 
 set(CMAKE_CXX_STANDARD 11)
-#add_definitions(-std=c++11)
 
 set (TBB_DIR /opt/tbb/cmake)
 find_package(TBB REQUIRED tbb_preview)
