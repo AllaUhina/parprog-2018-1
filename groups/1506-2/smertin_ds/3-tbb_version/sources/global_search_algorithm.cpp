@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <utility>
 #include <vector>
 #include <iterator>
 #include <algorithm>
@@ -45,7 +44,7 @@ double f(double);
 AnswerGSA methodGSA();
 
 int main(int argc, char *argv[]) {
-    const char *path_of_test = "../bin/tasks/task_09";
+    const char *path_of_test = "../bin/tasks/task_04";
 
     if (argc > 1) {
         path_of_test = argv[1];
@@ -131,9 +130,9 @@ double f(double x) {
 }
 
 AnswerGSA methodGSA() {
-
     if (task.function.find('x') == std::string::npos) {
         auto start_time = tbb::tick_count::now();
+
         answer.minX = task.left_border;
         answer.minY = f(task.left_border);
 
@@ -143,6 +142,11 @@ AnswerGSA methodGSA() {
         report.num_iter = 0;
 
         return answer;
+    }
+
+    std::ofstream log_stream("../log-files/tbb-log", std::ios::out);
+    if (!log_stream) {
+        std::cout << "open " << "../log-files/tbb-log" << " error" << std::endl;
     }
 
     const double a = task.left_border;
@@ -164,26 +168,21 @@ AnswerGSA methodGSA() {
             this->y = p.y;
             return *this;
         }
-				
     };
     struct Characteristic {
         double R;
         int iter;
-				bool operator<(const Characteristic& ch) const {
-					return (R < ch.R);
-				}
     };
 
-	tbb::task_scheduler_init init(tbb::task_scheduler_init::deferred);
+    tbb::task_scheduler_init init(tbb::task_scheduler_init::deferred);
     int num_threads = tbb::task_scheduler_init::default_num_threads();
     init.initialize(num_threads);
     report.num_threads = num_threads;
 
     std::vector<Point> points(k);
-    tbb::concurrent_priority_queue<Characteristic> q_maxCh(num_threads);
-	std::vector<Characteristic> maxCh(num_threads);
+    std::vector<Characteristic> maxCh(num_threads);
 
-    auto start_time = tbb::tick_count::now();
+    auto start_time = tbb::tick_count::now();;
 
     points[0].x = a;
     points[num_threads].x = b;
@@ -208,102 +207,135 @@ AnswerGSA methodGSA() {
             return a.x < b.x;
         });
 
-	class computing_M
-	{
-		const std::vector<Point> p_vec;
-		double max_M;
-	public:
-		explicit computing_M(std::vector<Point> pv, double m): p_vec(pv), max_M(m)
-		{	}
-		computing_M(const computing_M& cm, tbb::split): p_vec(cm.p_vec), max_M(cm.max_M)
-		{	}
-		void operator()(const tbb::blocked_range<int> &r) {
-			int begin = r.begin(), end = r.end();
-			for (int j = begin; j <= end; ++j) {
-    auto M = (fabs(p_vec[j].y - p_vec[j - 1].y)) / (p_vec[j].x - p_vec[j - 1].x);
-    max_M = (M > max_M) ? M : max_M;
-			}
-		}
-		void join(const computing_M& cm) {
-			max_M = (cm.max_M > max_M) ? cm.max_M : max_M;
-		}
-		double Result() {
-			return max_M;
-		}
-	} maxM_comput(points, maxM);
-	tbb::parallel_reduce(tbb::blocked_range<int>(1, i, num_threads - 1), maxM_comput);
-	maxM = maxM_comput.Result();
+        log_stream << "iter: " << num_iter << std::endl;
+
+        class maxM_comput {
+            std::vector<Point> &points;
+        public:
+            double maxM;
+
+            explicit maxM_comput(std::vector<Point> &pv): points(pv), maxM(-1) {}
+            maxM_comput(maxM_comput& mc, tbb::split): points(mc.points), maxM(-1) {}
+
+            void operator()(const tbb::blocked_range<int>& r) {
+                double M;
+                for (int j = r.begin(); j < r.end(); ++j) {
+                    M = (fabs(points[j].y - points[j - 1].y)) / (points[j].x - points[j - 1].x);
+                    maxM = (M > maxM) ? M : maxM;
+                }
+            }
+            void join( const maxM_comput& mc ) {
+                if (mc.maxM > maxM)
+                    maxM = mc.maxM;
+            }
+
+        } mc(points);
+        tbb::parallel_reduce(tbb::blocked_range<int>(1, i + 1), mc);
+        maxM = mc.maxM;
+
+        log_stream << "\tmaxM: " << maxM << std::endl;
 
         if (maxM > 0) {
             m = r * maxM;
         }
 
-		q_maxCh.clear();
-		tbb::parallel_for(tbb::blocked_range<int>(1, i, num_threads - 1),
-			[&](const tbb::blocked_range<int>& r) {
-				int begin = r.begin(), end = r.end();
-				Characteristic current_ch;
-				for (int j = begin; j <= end; ++j) {
-					current_ch.R = m * (points[j].x - points[j - 1].x) +
-												((points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y))
-												/ (m * (points[j].x - points[j - 1].x)) -
-												2 * (points[j].y + points[j - 1].y);
-					current_ch.iter = j;
-					q_maxCh.push(current_ch);
-				}
-			});
+        for (int j = 0; j < num_threads; ++j) {
+                maxCh[j].R = 0;
+                maxCh[j].iter = 1;
+            }
+        class maxCh_comput {
+            std::vector<Point>& points;
+            double m;
+            int num_threads;
+        public:
+            std::vector<Characteristic> &maxCh;
+            maxCh_comput(std::vector<Point> &p, double _m, std::vector<Characteristic> &q, int nth):
+                    points(p), m(_m), maxCh(q), num_threads(nth) {}
 
-		for (int j = num_threads - 1; j >= 0; --j) {
-			q_maxCh.try_pop(maxCh[j]);
-		}
+            void operator()(const tbb::blocked_range<int> &r) const {
+
+                Characteristic current_ch;
+                for (int j = r.begin(); j < r.end(); ++j) {
+                    current_ch.R = m * (points[j].x - points[j - 1].x) +
+                                   ((points[j].y - points[j - 1].y) * (points[j].y - points[j - 1].y))
+                                   / (m * (points[j].x - points[j - 1].x)) -
+                                   2 * (points[j].y + points[j - 1].y);
+                    current_ch.iter = j;
+
+                    if (j == 1) {
+                        maxCh[j - 1] = current_ch;
+                    } else {
+                        int ins_id;
+                        for (ins_id = 0; ins_id < num_threads; ++ins_id) {
+                            if (current_ch.R > maxCh[ins_id].R) {
+                                if (ins_id == num_threads - 1) {
+                                    maxCh[ins_id] = current_ch;
+                                } else {
+                                    for (int move_iter = num_threads - 1; move_iter > ins_id; --move_iter) {
+                                        maxCh[move_iter] = maxCh[move_iter - 1];
+                                    }
+                                    maxCh[ins_id] = current_ch;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } mchc(points, m, maxCh, num_threads);
+        tbb::parallel_for(tbb::blocked_range<int>(1, i + 1), mchc);
+
+        for (int j = 0; j < num_threads; ++j) {
+            log_stream << "\tmaxCh: " << maxCh[j].iter << ", " << maxCh[j].R << std::endl;
+        }
+
         if (fabs(points[maxCh[0].iter].x - points[maxCh[0].iter - 1].x) < eps) {
             break;
         }
 
+        class minPoint_comput {
+            int num_iter;
+            double m;
+            Point last_minPoint;
+            std::vector<Characteristic>& maxCh;
+        public:
+            std::vector<Point>& points;
+            Point minPoint;
 
-		class computing_minPoint
-		{
-			std::vector<Point> p_vec;
-			const std::vector<Characteristic> chvec;
-			const int i;
-            const double m;
-			Point min_point;
-		public:
-			explicit computing_minPoint(std::vector<Point> pv, std::vector<Characteristic> chv, Point minP, int iter, double _m):
-			p_vec(pv), chvec(chv), min_point(minP), i(iter), m(_m) {	}
-			computing_minPoint(const computing_minPoint& cm, tbb::split):
-			p_vec(cm.p_vec), chvec(cm.chvec), min_point(cm.min_point), i(cm.i), m(cm.m) {	}
-			void operator()(const tbb::blocked_range<int> &r) {
-				int begin = r.begin(), end = r.end();
-				for (int current_thread = begin; current_thread <= end; ++current_thread) {
-					Point newPoint;
-                    newPoint.x = 0.5 * (p_vec[chvec[current_thread].iter].x + p_vec[chvec[current_thread].iter - 1].x)
-                                 - 0.5 * (p_vec[chvec[current_thread].iter].y - p_vec[chvec[current_thread].iter - 1].y) / m;
+            minPoint_comput(std::vector<Point>& p, std::vector<Characteristic>& mch, Point lmp, double _m, int i):
+                    points(p), maxCh(mch), last_minPoint(lmp), minPoint(lmp), m(_m), num_iter(i) {}
+            minPoint_comput(const minPoint_comput& mpc, tbb::split):
+                    points(mpc.points), maxCh(mpc.maxCh), last_minPoint(mpc.last_minPoint),
+                    minPoint(mpc.last_minPoint), m(mpc.m), num_iter(mpc.num_iter) {}
+            void operator()(const tbb::blocked_range<int>& r) {
+                Point newPoint;
+                for (int j = r.begin(); j < r.end(); ++j) {
+                    newPoint.x = 0.5 * (points[maxCh[j].iter].x + points[maxCh[j].iter - 1].x)
+                                 - 0.5 * (points[maxCh[j].iter].y - points[maxCh[j].iter - 1].y) / m;
                     newPoint.y = f(newPoint.x);
-                    p_vec[i + 1 + current_thread] = newPoint;
-					min_point = (newPoint.y < min_point.y) ? newPoint : min_point;
-				}
-			}
-			void join(const computing_minPoint& cm) {
-				min_point = (cm.min_point.y < min_point.y) ? cm.min_point : min_point;
-			}
-			std::pair<Point, std::vector<Point>> Result() {
-				std::pair<Point, std::vector<Point>> res;
-                res.first = min_point; res.second = p_vec;
-                return res;
-			}
-		} minP_comput(points, maxCh, minPoint, i, m);
-        
-		tbb::parallel_reduce(tbb::blocked_range<int>(0, num_threads, num_threads - 1), minP_comput);
-		std::pair<Point, std::vector<Point>> res = minP_comput.Result();
-		minPoint = res.first;
-		points = res.second;
+                    points[num_iter + 1 + j] = newPoint;
 
+                    minPoint = (newPoint.y < minPoint.y) ? newPoint : minPoint;
+                }
+            }
+            void join(const minPoint_comput& mpc) {
+                if (mpc.minPoint.y < minPoint.y) {
+                    minPoint = mpc.minPoint;
+                }
+            }
+        } mpc(points, maxCh, minPoint, m, i);
+        tbb::parallel_reduce(tbb::blocked_range<int>(0, num_threads), mpc);
+        minPoint = mpc.minPoint;
+
+        for (int current_thread = 0; current_thread < num_threads; ++ current_thread)
+            log_stream << "\tpoints: " << points[i + 1 + current_thread].x << ", " << points[i + 1 + current_thread].y << std::endl;
+
+        log_stream << "\n\t  minPoint: " << minPoint.x << ", " << minPoint.y << std::endl;
         ++num_iter;
     }
 
     auto finish_time = tbb::tick_count::now();
-
+    log_stream.close();
     report.d_time = (finish_time - start_time).seconds();
     report.num_iter = num_iter;
 
