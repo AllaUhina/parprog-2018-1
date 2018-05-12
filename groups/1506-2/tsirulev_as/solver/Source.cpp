@@ -1,23 +1,74 @@
-//Задача 2. Умножение разреженных матриц. Элементы типа double. Формат хранения матрицы – столбцовый (CCS)
+п»ї//В«Р°РґР°С‡Р° 2. вЂќРјРЅРѕР¶РµРЅРёРµ СЂР°Р·СЂРµР¶РµРЅРЅС‹С… РјР°С‚СЂРёС†. РЃР»РµРјРµРЅС‚С‹ С‚РёРїР° double. вЂРѕСЂРјР°С‚ С…СЂР°РЅРµРЅРёВ¤ РјР°С‚СЂРёС†С‹ Р¦ СЃС‚РѕР»Р±С†РѕРІС‹Р№ (CCS)
 
-//======== !!!!!!!!!!!!! СТОЛБЦОВЫЙ  !!!!!!!!!!!!! =====================
+//======== !!!!!!!!!!!!! вЂ”вЂњСњР‹Р…Г·СњВ¬СџвЂ¦  !!!!!!!!!!!!! =====================
 
-#include <omp.h>
+
 #include <vector>
 #include <iostream>
+#include "tbb/task_scheduler_init.h"
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+#include"tbb/tick_count.h"
+using namespace tbb;
 using namespace std;
 
 struct CCSmatrix
 {
 	int size;//N
 	int countOfElems;
-	double *value;//ненулевые значения
-	int *numberOfRow;//номер строки для соотв. элемента
+	double *value;//РЅРµРЅСѓР»РµРІС‹Рµ Р·РЅР°С‡РµРЅРёВ¤
+	int *numberOfRow;//РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё РґР»В¤ СЃРѕРѕС‚РІ. СЌР»РµРјРµРЅС‚Р°
 	int *ind;
 
 };
 
-
+class Multiplicator 
+{ 
+	CCSmatrix A, B;
+	vector<int>* rows;
+	vector<double>* values;
+	int *row_index;
+public: 
+	Multiplicator(CCSmatrix& _A, CCSmatrix& _B, vector<int>* &_rows, vector<double>* &_values, int *_row_index) : A(_A), B(_B), rows(_rows), values(_values), row_index(_row_index) 
+	{} 
+	void operator()(const blocked_range<int>& r) const 
+	{ 
+		int begin = r.begin();
+		int end = r.end();
+		int N = A.size;
+		int i, j, k;
+		int *temp = new int[N];
+		for (i = begin; i < end; i++)	
+		{ 
+			memset(temp, -1, N * sizeof(int)); 
+			int ind1 = A.ind[i], ind2 = A.ind[i + 1];
+			for (j = ind1; j < ind2; j++) 
+			{ 
+				int col = A.numberOfRow[j];
+				temp[col] = j; 
+			} 
+			for (j = 0; j < N; j++) 
+			{ 
+				double sum = 0;
+				int ind3 = B.ind[j], ind4 = B.ind[j + 1];
+				for (k = ind3; k < ind4; k++) 
+				{ 
+					int bcol = B.numberOfRow[k];
+					int aind = temp[bcol];
+					if (aind != -1) 
+						sum += A.value[aind] * B.value[k]; 
+				} 
+				if (fabs(sum) > 0) 
+				{ 
+					rows[i].push_back(j);
+					values[i].push_back(sum);
+					row_index[i]++;
+				} 
+			} 
+		} 
+		delete [] temp;
+	} 
+};
 
 
 void init_CCSmatrix(int sz, int cnt, CCSmatrix &matr)
@@ -34,7 +85,7 @@ void init_CCSmatrix(int sz, int cnt, CCSmatrix &matr)
 	
 }
 
-// нужно транспонировать А 
+// РЅСѓР¶РЅРѕ С‚СЂР°РЅСЃРїРѕРЅРёСЂРѕРІР°С‚СЊ С 
 
 CCSmatrix transposeMatrix(CCSmatrix &matr)
 {
@@ -74,78 +125,50 @@ CCSmatrix transposeMatrix(CCSmatrix &matr)
 
 int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res,int thrds)
 {
-	
-	int total_cnt=0;//число элементов
+	cout<<"starting\n";
+	int total_cnt=0;//С‡РёСЃР»Рѕ СЌР»РµРјРµРЅС‚РѕРІ
 	if (A.size!=B.size)
 		throw "size error";
 	
-	CCSmatrix AT;
+	CCSmatrix AT,BT;
+	cout<<"AT\n";
 	AT=transposeMatrix(A);
-	
-	B=transposeMatrix(B);
-	B=transposeMatrix(B);
-
+	cout<<"AT ready\n";
+	BT=transposeMatrix(B);
+	cout<<"B1\n";
+	B=transposeMatrix(BT);
+	cout<<"B2\n";
+	cout<<"matrixs prepared\n";
 	int N=A.size;
-	int chunk=20;
+	
 	int i, j, k;
 	
 	vector<int> *rows = new vector<int>[N];
 	vector<double> *values = new vector<double>[N];
 	int* row_index = new int[N + 1];
 	memset(row_index, 0, sizeof(int) * N);
-	
-#pragma omp parallel num_threads(thrds)
-	{ 
-		int *temp = new int[N];
-		
-#pragma omp for private(j,k) schedule(dynamic)
-		for (i = 0; i < N; i++) 
-		{ 
-			memset(temp, -1, N * sizeof(int)); 
-			int ind1 = AT.ind[i], ind2 = AT.ind[i + 1]; 
-			for (j = ind1; j < ind2; j++)
-			{
-				int col = AT.numberOfRow[j];
-				temp[col] = j; 
-			} 
-			for (j = 0; j < N; j++) 
-			{ 
-				double sum = 0;
-				int ind3 = B.ind[j], ind4 = B.ind[j + 1];
-				for (k = ind3; k < ind4; k++) 
-				{ 
-					int bcol = B.numberOfRow[k];
-					int aind = temp[bcol];
-					if (aind != -1)
-						sum += AT.value[aind] * B.value[k]; 
-				}
+	cout<<"preparing tbb\n";
+	task_scheduler_init init(thrds);
+	cout<<"all inited\n";
 
-				if (fabs(sum) > 0) 
-				{ 
-					rows[i].push_back(j); 
-					values[i].push_back(sum); 
-					row_index[i]++;
-				} 
-			} 
-		} 
-		delete [] temp;
-	}
-	cout<<"parallel is nice\n";
-		int NZ = 0;
-		for(i = 0; i < N; i++) 
-		{ 
-			int tmp = row_index[i];
-			row_index[i] = NZ;
-			NZ += tmp; 
-		} 
-		row_index[N] = NZ;
-		init_CCSmatrix(N,NZ,res);
-		cout<<"res is inited\n";
-		int count = 0;
-		cout<<"start of copying vectors\n";
-		for (i = 0; i < N; i++) //тут и начинается лажа. Это точно
-		{ 
-			int size = rows[i].size();
+
+	int grainsize = 2;
+	parallel_for(blocked_range<int>(0, A.size, grainsize), Multiplicator(AT, B, rows, values, row_index));
+
+	int NZ = 0; 
+	for(i = 0; i < N; i++) 
+	{ 
+		int tmp = row_index[i];
+		row_index[i] = NZ;
+		NZ += tmp;
+	} 
+	row_index[N] = NZ;
+	init_CCSmatrix(N, NZ, res);
+	int count = 0; 
+	cout<<"start of memcpy\n";
+	for (i = 0; i < N; i++) 
+	{ 
+		int size = rows[i].size();
 			if(size!=0)
 			{
 				
@@ -155,23 +178,20 @@ int multiply(CCSmatrix A, CCSmatrix B, CCSmatrix &res,int thrds)
 				
 				count += size; 
 			}
-		
-			
-			
-		} 
-		
-		memcpy(res.ind, &row_index[0], (N + 1) * sizeof(int));
-		
-		delete [] row_index;
-		delete [] rows;
-		delete [] values;	
-		res=transposeMatrix(res);
+	} 
+	memcpy(res.ind, &row_index[0], (N + 1) * sizeof(int));	
+	delete [] row_index;
+	delete [] rows;
+	delete [] values;	
+	res=transposeMatrix(res);
 		
 	return NZ;
 }
+
+
 int main(int argc, char * argv[])
 {
-	double t1,t2;
+	double t1;
 	char *file_name,*file_output;
 	int m_size,not_null_elements_in_one_col,k,Index,el_cnt;
 	int num_thrd = 1;
@@ -180,6 +200,7 @@ int main(int argc, char * argv[])
 		file_name=argv[1];
 		file_output=argv[2];
 		num_thrd=atoi(argv[3]);
+	
 	}
 	else
 	{
@@ -210,13 +231,16 @@ cout<<"======================================================\n";
 	fread(B_test.numberOfRow,sizeof(*B_test.numberOfRow),test_size*test_count,fl);
 	fread(B_test.ind,sizeof(*B_test.ind),test_size+1,fl);
 
+	cout<<"start\n";
 	
-	t1=omp_get_wtime();
+	tick_count t0= tick_count::now();
+	cout<"t0 calculated\n";
 	el_cnt=multiply(A_test,B_test,rslt,num_thrd);
-	t2=omp_get_wtime();
-	double total_time=t2-t1;
+	t1 = (tick_count::now() - t0).seconds();
+	
 
-	cout<<"successfully calculated \n"<<"time is "<<total_time<<endl;
+	cout<<"successfully calculated \n"<<endl;
+	cout<<"time is "<<t1<<endl;
 	cout<<"------------------------------\n";
 	cout<<"res_test \n";
 	fl=fopen(file_output,"wb");
