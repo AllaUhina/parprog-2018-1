@@ -13,7 +13,6 @@
 
 using namespace tbb;
 using namespace std;
-const int MIN = 1000000;
 
 class my_range
  {
@@ -66,7 +65,6 @@ private:
 	TPostfix func;
 	Point res;
 	double a, b;
-	const int min = -10000000;
 
 public:
 	explicit myTbb(TPostfix f, int procN,double _a, double _b)
