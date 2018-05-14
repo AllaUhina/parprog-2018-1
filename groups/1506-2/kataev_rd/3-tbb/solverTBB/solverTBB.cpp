@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 	int width = inFile.cols;
 
 	//initialize TBB
-	task_scheduler_init init(6);
+	task_scheduler_init init(stoi(argv[2]));
 
 	tick_count t1, t2;
 	double time;
