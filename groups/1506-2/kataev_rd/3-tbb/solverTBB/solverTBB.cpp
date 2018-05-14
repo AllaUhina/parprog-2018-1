@@ -24,6 +24,8 @@ int control(int in, int a, int b)
 	else return in;
 }
 
+//class with an operator containin actual gaussian filtering
+//filtering code same as linear/OpenMP
 class Gausser
 {
 private:
@@ -68,8 +70,6 @@ public:
 
 int main(int argc, char *argv[])
 {
-	task_scheduler_init init(6);
-
 	int size = 3;
 	int radius = size / 2;
 	float sigma = 0;
@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 	string tstStr = string(argv[1]);
 	testName = "../../Tests/" + tstStr;
 
+	//test file read
 	ifstream testFile;
 	testFile.open(testName, ios::in | ios::binary);
 	testFile >> picName;
@@ -93,12 +94,10 @@ int main(int argc, char *argv[])
 	inFile = imread(picPathRaw + picName, CV_LOAD_IMAGE_COLOR);
 	Mat outFile(inFile.size(), CV_8UC3);
 
+	//gaussian kernel initialization and normalization
 	double **gaussCore = new double*[size];
 	for (int i = 0; i < size; i++)
 		gaussCore[i] = new double[size];
-
-	tick_count t1, t2;
-	double time;
 
 	for (i = -radius; i <= radius; i++)
 	{
@@ -121,30 +120,15 @@ int main(int argc, char *argv[])
 	int height = inFile.rows;
 	int width = inFile.cols;
 
+	//initialize TBB
+	task_scheduler_init init(6);
+
+	tick_count t1, t2;
+	double time;
+
 	t1 = tick_count::now();
 
-	/*for (i = 0; i < height; i++)
-	{
-		for (int j = 0; j < width; j++)
-		{
-			double blue = 0, green = 0, red = 0;
-
-			for (int t = -radius; t <= radius; t++)
-			{
-				for (int k = -radius; k <= radius; k++)
-				{
-					int currX = control(i + t, 0, height - 1);
-					int currY = control(j + k, 0, width - 1);
-					Vec3b neighborCol = inFile.at<Vec3b>(currX, currY);
-					blue += neighborCol.val[0] * gaussCore[t + radius][k + radius];
-					green += neighborCol.val[1] * gaussCore[t + radius][k + radius];
-					red += neighborCol.val[2] * gaussCore[t + radius][k + radius];
-				}
-			}
-				Vec3b col(control(blue, 0, 255), control(green, 0, 255), control(red, 0, 255));
-				outFile.at<Vec3b>(i, j) = col;
-		}
-	}*/
+	//begin the filtering process
 	auto func = Gausser(inFile, outFile, gaussCore, width, height, radius);
 	parallel_for(blocked_range2d<size_t, size_t>(0, height, 0, width), func);
 
