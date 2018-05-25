@@ -4,7 +4,10 @@
 #include <string>
 #include <math.h>
 #include <fstream>
-
+#include <process.h>
+#include <errno.h>
+#include <omp.h>
+#include <time.h>
 #include "postfix.h"
 #include "tbb/task_scheduler_init.h"
 #include "tbb/parallel_for.h"
@@ -13,6 +16,7 @@
 #include "tbb/parallel_reduce.h"
 #include "tbb/tick_count.h"
 #include "tbb/task_group.h"
+
 
 
 
@@ -29,35 +33,33 @@ double F(string funct, double x0)
 	return integ.Calculate(x0);
 }
 
-double Integral(string funct, double left, double right, int num)
-{
-	double sum = 0;
-	double len = abs((right - left) / num); //äëèíà êóñî÷êà
-	double tleft = left, tright = tleft + len; //ãðàíèöû êóñî÷êà
-	for (int k = 0; k < num; k++)
-	{
-		sum += (F(funct, tright) + F(funct, tleft))*(tright - tleft) / 2;
-		tleft += len;
-		tright += len;
-	}
-	return sum;
-}
+//double Integral(string funct, double left, double right, int num)
+//{
+//	double sum = 0;
+//	double len = abs((right - left) / num); //äëèíà êóñî÷êà
+//	double tleft = left, tright = tleft + len; //ãðàíèöû êóñî÷êà
+//	for (int k = 0; k < num; k++)
+//	{
+//		sum += (F(funct, tright) + F(funct, tleft))*(tright - tleft) / 2;
+//		tleft += len;
+//		tright += len;
+//	}
+//	return sum;
+//}
 
 
 
 
 int main(int argc, char* argv[])
 {
-	int numOfThreads = 4;
+	int numOfThreads = 2;
 	task_scheduler_init init(numOfThreads);
-
 	int numOfTest = 10;
 	double right, left;
 	string funct;
-	double res;
-	double len = 0.0001;
-	double numOfIter = 100;
-	string path = "../test/task/5.in";
+	double len; 
+	double numOfIter = 100000;
+	string path = "../test/task/9.in";
 	if (argc > 1)
 		path = argv[1];
 
@@ -71,14 +73,16 @@ int main(int argc, char* argv[])
 	else return -10;//íå îòêðûòà çàäà÷à
 	tick_count time0,time;
 	time0 = tick_count::now();
-	
+	len = (right - left) / numOfIter;
 	auto total = parallel_reduce(blocked_range<double>(left, right), 0.0, 
 		[&](blocked_range<double> r, double sum)
 	{
-		for (double i = r.begin(); i < r.end(); i+len)
+		sum = 0;
+		for (double i = r.begin(); i < r.end(); i=i+len)
 		{
 			sum += (F(funct, i+len) + F(funct, i))*(len) / 2;
-		} return sum;
+		} 
+		return sum;
 	}, plus<double>());
 	time = tick_count::now();
 	double dtime = (time - time0).seconds();
@@ -95,9 +99,8 @@ int main(int argc, char* argv[])
 			break;
 		}
 	}
-
-	string pathRes = "../test/result/" + tmp + ".result";
-	string pathAns = "../test/answer/" + tmp + ".ans";
+	string pathRes = "../test/result/" + tmp + "_TBB.result";
+	string pathAns = "../test/answer/" + tmp + ".ans"; 
 	ofstream streamA(pathRes, ios::out | ios::binary);
 	if (streamA) {
 		streamA << total << endl;
