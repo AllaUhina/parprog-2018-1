@@ -3,7 +3,9 @@ import sys
 import random as rm
 
 tasks = ["../tasks/task_00.task", "../tasks/task_01.task", "../tasks/task_02.task",
-         "../tasks/task_03.task", "../tasks/task_04.task"]
+         "../tasks/task_03.task", "../tasks/task_04.task", "../tasks/task_05.task",
+         "../tasks/task_06.task", "../tasks/task_07.task", "../tasks/task_08.task",
+         "../tasks/task_09.task"]
 
 print("testsmaker is doing...")
 code = pr.call("../bin/tasksmaker")
